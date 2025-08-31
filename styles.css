@@ -1,0 +1,9 @@
+/*Simulation Setup*/
+body {
+  margin: 0px;
+  overflow: hidden;
+}
+
+#simulation_window {
+  background-color: white;
+}

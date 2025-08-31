@@ -1,0 +1,1554 @@
+***Dont change something if it already works well (KeyInput file) *IMPORTANT*
+***Note the rule above is a bad rule. I have broken it almost every single time while working on this project
+
+***Irrelevant note but I need to get better at commenting my code cuz it sucks truthfully
+
+//displaying the coordinate grid
+    for(let x = this.windowWidth / 2 - this.gridSpacing * Math.round(this.windowWidth / 2 / this.gridSpacing); x < this.windowWidth; x += this.gridSpacing) {
+      for(let y = this.windowHeight / 2 - this.gridSpacing * Math.round(this.windowHeight / 2 / this.gridSpacing); y < this.windowHeight; y += this.gridSpacing) {
+        ctx.fillStyle = 'rgb(100, 100, 100)';
+        ctx.beginPath();
+          ctx.arc(x, y, 2.5, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    }
+
+    //X and Y axis lines
+    ctx.fillStyle = 'rgb(255, 0, 0, 0.2)';
+    ctx.fillRect(this.windowWidth / 2, 0, 1, this.windowHeight);
+    ctx.fillRect(0, this.windowHeight / 2, this.windowWidth, 1);
+
+    //show the camera along with the conversion from the coordinate system to pixels
+    if(this.camera.z === 0) {
+    ctx.fillStyle = 'rgb(0, 255, 0)';
+    ctx.beginPath();
+      ctx.arc(this.camera.x * this.gridSpacing + this.windowWidth / 2, this.camera.y * this.gridSpacing + this.windowHeight / 2, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    }
+
+
+wireFrame.draw(this, wireFrameType);
+
+
+
+rotation
+ASCII Conversion
+Coordinate Conversion
+Rendering
+Updating -Contains everthing above, and goes in update file in Simulator
+
+
+//Rendering the cube
+  for(let i = 0; i < this.pyramid.length; i++) {
+    ctx.fillStyle = '#646464';
+    ctx.beginPath();
+      ctx.arc(this.pyramid[i].x, this.pyramid[i].y, 5, 0, 2 * Math.PI); //vertex points
+    ctx.fill();
+  }
+
+  for(let i = 0; i < wireFrame.pyramid.edge.length; i++) {
+    ctx.strokeStyle = '#646464';
+    ctx.beginPath();
+      ctx.moveTo(this.pyramid[wireFrame.pyramid.edge[i].v1].x, this.pyramid[wireFrame.pyramid.edge[i].v1].y); //wireframe of the cube //v1
+      ctx.lineTo(this.pyramid[wireFrame.pyramid.edge[i].v2].x, this.pyramid[wireFrame.pyramid.edge[i].v2].y); //v2
+    ctx.stroke();
+  }
+
+
+
+
+//import
+import { wireFrame } from '../wireFrame/wireFrameData.js';
+import { mapToPixels } from './convertGraphPos.js';
+
+
+//variables
+let projectedVertexList = [];
+
+
+//perform the calculations to render the vertex onto the display
+export function wireFrameRenderer(simulator) {
+  const focalLength = simulator.camera.z;
+
+  for(let i = 0; i < wireFrame.pyramid.vertex.length; i++) { //weak perspective projection equation
+    projectedVertexList.push({
+      x: (focalLength * wireFrame.pyramid.vertex[i].x) / (focalLength + wireFrame.pyramid.vertex[i].z),
+      y: (focalLength * wireFrame.pyramid.vertex[i].y) / (focalLength + wireFrame.pyramid.vertex[i].z),
+      z: 0,
+    });
+  }
+
+  mapToPixels(simulator, projectedVertexList); //convert positioning
+
+  return projectedVertexList;
+}
+
+
+
+
+
+//Converting the wireframe positions from coordinate to pixels so that it can display properly on the screen
+export function mapToPixels(simulator, projectedVertexList) {
+  for(let i = 0; i < projectedVertexList.length; i++) {
+    projectedVertexList[i].x = projectedVertexList[i].x * simulator.gridSpacing + simulator.windowWidth / 2;
+    projectedVertexList[i].y = projectedVertexList[i].y * simulator.gridSpacing + simulator.windowHeight / 2;
+  }
+}
+
+
+assets/simulator/render/renderer.js
+
+assets/polygonMesh/polygonMeshData.js
+assets/render/polygonMesh/polygonMeshData.js
+assets/render/polygonMeshData.js
+
+NOTE-
+  -Make renderer file into a class
+  -Use render function in constructior
+
+  -Dont draw any points on the 3d object that pass through the object itself
+
+  -Create a seperate grid for the ASCII (If font is monotone)
+
+
+-Assets
+  -GameAssets
+    -GameItems
+    -Miscellaneous
+      -Collide
+    -UserInterface
+      -Button
+      -KeyInput
+
+//import
+import { wireFrame } from '../wireFrame/wireFrameData.js'; //wireFrame data
+import { mapToPixels } from './convertGraphPos.js';
+
+
+export default class wireFrameRenderer {
+  constructor(simulator, wireFrameType) {
+    //Stores all of the projected vertex positions
+    this.projectedVertexList = [];
+
+    this.wireFrame = wireFrameType; //Which wireframe its rendering
+    this.focalLength = simulator.camera.z; //Focal length
+
+    this.simulator = simulator; //simulator
+  }
+
+  render(dt) {
+    //Weak perspective projection equation
+    for(let i = 0; i < wireFrame[this.wireFrame].vertex.length; i++) {
+      this.projectedVertexList.push({
+        x: (this.focalLength * wireFrame[this.wireFrame].vertex[i].x) / (this.focalLength + wireFrame[this.wireFrame].vertex[i].z),
+        y: (this.focalLength * wireFrame[this.wireFrame].vertex[i].y) / (this.focalLength + wireFrame[this.wireFrame].vertex[i].z),
+        z: 0,
+      });
+    }
+
+    mapToPixels(this.simulator, this.projectedVertexList); //convert positioning
+  }f
+  draw(ctx) {
+    ctx.strokeStyle = '#646464';
+    ctx.lineWidth = 5;
+
+    for(let i = 0; i < this.projectedVertexList.length; i++) {
+      ctx.fillStyle = '#646464';
+      ctx.beginPath();
+        ctx.arc(this.projectedVertexList[i].x, this.projectedVertexList[i].y, 5, 0, 2 * Math.PI); //vertex points
+      ctx.fill();
+    }
+
+    for(let i = 0; i < wireFrame[this.wireFrame].edge.length; i++) {
+      ctx.beginPath();
+        ctx.moveTo(this.projectedVertexList[wireFrame[this.wireFrame].edge[i].v1].x, this.projectedVertexList[wireFrame[this.wireFrame].edge[i].v1].y);
+        ctx.lineTo(this.projectedVertexList[wireFrame[this.wireFrame].edge[i].v2].x, this.projectedVertexList[wireFrame[this.wireFrame].edge[i].v2].y);
+      ctx.stroke();
+    }
+  }
+}
+
+export const wireFrame = { //Stores wireframe data
+  cube: {
+    vertex: [
+      {x: -4.746, y: -2, z: -2.545},
+      {x: -1.682, y: -2, z: -5.116},
+      {x: -1.682, y: 2, z: -5.116},
+      {x: -4.746, y: 2, z: -2.545},
+      {x: -7.317, y: 2, z: -5.609},
+      {x: -7.317, y: -2, z: -5.609},
+      {x: -4.253, y: -2, z: -8.18},
+      {x: -4.253, y: 2, z: -8.18},
+    ],
+    vertex: [
+      {x: -3, y: -1, z: -6.414},
+      {x: -1, y: -3, z: -8.414},
+      {x: 2.414, y: -2.414, z: -7.586},
+      {x: 0.414, y: 0.414, z: -4.414},
+      {x: 1, y: 3, z: -6.414},
+      {x: -2.414, y: 2.414, z: -7.586},
+      {x: -0.414, y: 0.414, z: -10.414},
+      {x: 3, y: 1, z: -8.414},
+    ],
+    vertex: [
+      {x: -2, y: -2, z: -5},
+      {x: 2, y: -2, z: -5},
+      {x: 2, y: 2, z: -5},
+      {x: -2, y: 2, z: -5},
+      {x: -2, y: 2, z: -9},
+      {x: -2, y: -2, z: -9},
+      {x: 2, y: -2, z: -9},
+      {x: 2, y: 2, z: -9},
+    ],
+
+    face: [
+      {v1: 0, v2: 1, v3: 2},
+      {v1: 0, v2: 3, v3: 2},
+      {v1: 0, v2: 3, v3: 4},
+      {v1: 0, v2: 5, v3: 4},
+      {v1: 5, v2: 4, v3: 7},
+      {v1: 5, v2: 6, v3: 7},
+      {v1: 1, v2: 2, v3: 7},
+      {v1: 1, v2: 6, v3: 7},
+      {v1: 0, v2: 5, v3: 1},
+      {v1: 5, v2: 1, v3: 6},
+      {v1: 2, v2: 3, v3: 4},
+      {v1: 4, v2: 2, v3: 7},
+    ],
+
+    edge: [
+      {v1: 0, v2: 1},
+      {v1: 1, v2: 2},
+      {v1: 2, v2: 3},
+      {v1: 3, v2: 0},
+      {v1: 4, v2: 5},
+      {v1: 5, v2: 6},
+      {v1: 6, v2: 7},
+      {v1: 7, v2: 4},
+      {v1: 4, v2: 3},
+      {v1: 5, v2: 0},
+      {v1: 6, v2: 1},
+      {v1: 7, v2: 2},
+    ],
+  },
+
+  pyramid: {
+    vertex: [
+      {x: -2, y: 2, z: -5},
+      {x: 2, y: 2, z: -5},
+      {x: 2, y: 2, z: -9},
+      {x: -2, y: 2, z: -9},
+      {x: 0, y: -2, z: -7},
+    ],
+
+    edge: [
+      {v1: 0, v2: 1},
+      {v1: 1, v2: 2},
+      {v1: 2, v2: 3},
+      {v1: 3, v2: 0},
+      {v1: 0, v2: 4},
+      {v1: 1, v2: 4},
+      {v1: 2, v2: 4},
+      {v1: 3, v2: 4},
+    ],
+  },
+};
+
+
+Several things I want to add in the Slider file
+
+  ***IMPORTANT***
+  -Change the look of sliders
+  -Make it so that the input box dissapears when the draw function is not being used
+
+
+polygonMesh.js
+polygonMeshData.js {Winner}
+
+assets/polygonMesh/polygonMeshData.js
+
+assets/render/polygonMesh/polygonMeshData.js
+
+assets/render/polygonMeshData.js
+
+
+HSR Algorithm-
+  -Remove half of the total amount of polygons
+
+For HSR Algorithm I need to sort the polygons from nearest to farthest, how to do that exactly I have no Idea
+
+
+Weird thing I found out right now
+The closer a vertex is to the screen (z value), the closer it will be to (0, 0) in its projection
+This projection essentially flips the z-values of the vertexs, making the cube look flipped
+
+1. I need to calculate the average z-value of each polygon
+
+So something I think I can do to fix the HSR algorithm is to take the scale factor of the two different types of ray/projections, and then for the projection itself I do (x - y) * scaleFactor, then I add back the sign
+
+So I need to space it out, along with moving it across. How I can space it out I have a relative idea of doing it.
+So you take the spacing between 
+Ok, so bascially I have no fucking idea how to fix this shit, really I only have two options, change several things in the HSR & every future algorithm I implement on this, or to just fix this projection mess. Which I have no idea of how to do.
+
+
+So basically I figured out how to fix this shit.
+
+So what I need to do is to multiply the vertex points by some scale factor (I dont know if the different axis need different scale-factors yet).
+Then I need to move the verticies down a certain amount. Then I would have done is so that it works right
+
+So the scale factor is indeed the same for both axis.
+
+
+Take a list of both of the projected vertexs, and for the correctly projected list, get the vertex of the cube in that order
+
+So actually, the projected/rotated vertex list is in the same order as the vertex list of the polygonMesh. So what that means is that 
+
+Okkkkk... So I learened that if im actually going to go thru with this thing (which im probably not). I will need to apply a scale-factor and a translator to each independent vertex. So that this thing will actually work...
+So I will learn how to do that thing
+
+So something I know is that xProj[i], the index is the same as rotatedVertex[i]
+
+So what that means is that something I can do is that I can take-
+
+
+rotatedVertexList[i].x = xProj[i].x,
+rotatedVertexList[i].z = 0;
+
+But note that I will only be doing this for the projection, everything else will be the same
+
+
+Note to self-
+  -I need to find a better way to write the polygonMeshData
+
+
+Note-
+  -I can use local vertex points when describing the vertex points of the models
+  -Then I can translate the object to the center of the screen via its center via a translation matrix
+  -I can also scale the object instead of changing its focalLength so that it appears more naturald
+
+  -Need to make focalLength,
+  model sizes,
+  how close the model is to the camera,
+  min and max scale
+
+  ALL ARBITRARY
+
+modelSize / projectedModelSize = scaleFactorSize = all the same for each model = can find min & max scale values
+
+
+Pipeline-
+  -PolygonMesh
+  -Translate
+  -Scale
+
+  -Rotate
+  -HSR
+  -Projection
+
+So for the arbitrary numbers of min and max, I guess the min can be 5, and the max can be idk something that covers the entire screen.
+
+I can take the size of the original one, and the projected one, so basically the z value is always zero on the projected one, so that doesnt matter, only x and y
+
+So basically ive come up with an algorithm ->
+
+(biggest x value - smallest x value / smallestValueFromAllAxis) * scaleFactor //scaled from centroid
+(biggest y value - smallest y value / smallestValueFromAllAxis) * scaleFactor //scaled from centroid
+(biggest z value - smallest z value / smallestValueFromAllAxis) * scaleFactor //scaled from centroid
+
+
+(x, y, z) / smallestAxisLength * scalingFactor
+Note-
+MY IDEA WORKSSS!!!!
+
+Ok so new notes---
+  -focalLength and the length away from the screen will both be the same (15).
+  -The model size will be a constant (variable in simulator file)
+  -Rotation will be controlled by the users mouse
+
+mapToPixels() {
+
+}
+
+matrixMultiplier(matrix, ) {
+
+}
+
+./assets/render/polygonMeshData.js
+./assets/render/renderAccesory.js
+
+import { matrixMultiplier, mapToPixels } from '../render/renderUtility.js';
+
+matrixMultiplier(this.vertexList, this.matrix[1], this.translationValues);
+matrixMultiplier(this.vertexList, this.matrix[2], this.scalingValues);
+
+For the scaling, since all of the objects first vertex will start at (0, 0, 0). Instead of checking the difference between the biggest and smallest number I can just compare the biggest numbers and see which one is the smallest
+Note- This doesnt work
+
+Math.min(Math.max(this.vertexList[i].xyz) - Math.min(this.vertexList[i].xyz));
+
+
+Future planning ahead but for when I create the configurationScreen I want to have the following settings-
+
+  -Scroller to pick which model to render
+
+  -FocalLength slider
+  -ModelSize slider
+
+  -X Axis Rotation slider
+  -Y Axis Rotation Slider
+  -Z Axis Rotation Slider
+
+  -Option between fill & no fill
+  -Option between ASCII and Regular
+
+  -Option between Interactive and Non-Interactive
+
+  -Pause/Unpause game
+
+
+NOTES-
+  -Sometimes the projected model is not centered, this is because the projected points are different than the model points, they get skewed via the projection equation, so I need to center it after I render it. But I dont want to call that function every single time to render it, So I guess I need to do something to prevent that
+
+  -Speaking of repeating functions, I dont want to call "mapToPixels" every cycle, so I can call that before to transform the points to the screen pixels instead of grid coordinate system
+
+Model Attributes can be the modelSize and the rotation speeds (x, y, z)
+
+
+Notes-
+  -The render function will constantly be looped thru in the sim file
+  -Rewirte and add comments to renderUtility file
+  -Model Initialization function needs rewritting
+
+VERY IMPORTANT NOTES-
+  -The reason why the models sizes are so far apart is becasue since all of the models are semi-symmetrical, any non-symmetrical model will look wildy off-size, especially if ones sides are 1 while the rest are large.
+
+  -Note the bug-report above when fixed fixes nearly everything that was wrong to begin with.
+
+  -Instead of centering it from the centroid, I will center it based on the middle-point of the axis. However, im not sure about this when centering it along its z-axis since that could skew the model in unwanted ways.
+
+-Things that still need to be fixed-
+  -Render Utility,
+  -polygonMeshData
+  -Render
+  -Make the size in vertexList into an object that stores the size for both the vertex points and the face planes
+
+  -Render Utility
+  -Add faces to polygonMeshData tetromino
+
+
+
+-Rendering Pipeline
+
+  -Model Initialization
+  -Shading
+  -Rotation
+
+  -Projection         //Rendering
+
+  -Rasterization      //Drawing
+  -ASCII Conversion   
+
+
+
+-Centering the model
+-mapToPixels();
+
+-MODELS ARE NOT SCALED THE SAME
+
+face: [
+  {v1: 0, v2: 3, v3: 2},
+  {v1: 0, v2: 2, v3: 1},
+  {v1: 7, v2: 4, v3: 3},
+  {v1: 7, v2: 3, v3: 0},
+  {v1: 5, v2: 4, v3: 7},
+  {v1: 6, v2: 5, v3: 7},
+  {v1: 1, v2: 2, v3: 6},
+  {v1: 2, v2: 5, v3: 6},
+  {v1: 3, v2: 4, v3: 2},
+  {v1: 4, v2: 5, v3: 2},
+  {v1: 0, v2: 1, v3: 7},
+  {v1: 7, v2: 1, v3: 6},
+],
+face: [
+  {v1: 0, v2: 1, v3: 2},
+  {v1: 0, v2: 3, v3: 1},
+  {v1: 2, v2: 3, v3: 0},
+  {v1: 1, v2: 3, v3: 2},
+],
+
+Things that cold be wrong-
+  -mapToPixels()           -Not done
+  -Centering of the model  -Done
+  -Models are not the same -Needs more investigation
+
+The models should be the same size, so why arent they?
+
+Okay so after what felt like absolutely forever in absolute hell, I think I figured out the problem.
+The problem is that the models actually arent centered to the focal length
+
+Update: That was infact the case, and instead of moving it based on its centroid, I moved it based off of the centroid of each of its axisLengths.
+Then, the final problem was that I had to flip two minus signs.
+
+Anyways, moving onto rotation, instead of having 3 individual rotations for each axis, I have one really big matrix capable of moving in respect of all 3 axis.
+While the matrix also being Intristic. *IMPORTANT*
+
+So Actually, instead of having one giant matrix, we will have 3 matrix each for its individual axis. I was over-complicating things and I thought that this wouldnt work, but it will. I also went with this option since I think that the 3-in-1 matrix was WAYY to big and would be more efficient if we just multiplied each matrix indivually instead of one giant one at a time.
+
+To make it more efficient, I will rewrite the renderer file and make it so that
+
+Okay so basically the render function will be constantly called upon to render the model, but sometimes, it will only need to be rendered once, this is when there is currently no rotation being applied.
+
+So basically, if there is no rotation, call it once, else if there is rotation, then call it multiple times.
+And in the rotation function not every single rotation axis will be applied,
+
+So instead what I can do is I can grab a list and put in all of the axis that are being rotated, then, in the render function I can check if there is any data in that list, if there isnt, then only call the renderer once. If so, then call the render function along with the rotation function, and in the rotation function loop over the axis that are only being applied.
+
+Note: Above Notes are perfect :)
+
+Ok so big problem bothering me
+  The program still runs even if youre not in the tab, so I need to add a little bit of code to stop it if you leave the tab, and start it agian once you re-enter the tab
+
+Okay so unsuprisingly, having the rotationMatricies in the constructor file doesnt update it.
+So I have a couple options,
+  -I can have it in a seperate function within the renderer file
+    -I can constantly update it
+    -I can only call it whenever I call matrixMultiplication() file
+
+  -I can store it in a file in the renderUtility file
+    -I can call it from the matrixMultiplication file
+
+Are the 3D Matrix Rotations a renderUtility or part of the renderer?
+
+Actually, I dont know cuz none of these options are rlly any good
+
+Have rotationMatrix as a function in renderer file
+  -Efficent
+  -Reasonable
+  -Readable
+  -Call it multiple times
+
+Have rotationMatrix in rotate function in renderer file
+  -Reasonable
+  -Not readable
+  -Call it multiple times
+
+Have rotationMatrix in matrixMultiplication function in renderUtility file
+  -Have to constantly call it
+  -Inefficient due to reason above
+  -Readable
+
+Have rotationMatrix as a function in renderUtility file ***WINNER***
+  -Readable
+  -Reasonable
+  -Efficient
+
+Okay so after an unreasonable amount of time, ive finally figured out what I want "Yippee!"
+Sike... I lied, for some reason the code THAT I DID NOT EDIT, somehow broke :L
+
+NOTE: I need to figure out why the console.log() in the matrixMultiplication file is repeating the same output for thausands of times before updating and moving onto the next one
+
+PROBLEMS IN RENDERER THAT I NEED TO FIX---
+  -Find out why code in matrixMultiplication is being called multiple times in one loop
+
+  -Rename matrixMultiplication function IF I will not continue to use more instances of matrix Multiplication
+  -Move translation code IF I will have to do more matrix multiplications
+
+  -Find out how to rotate it across all 3 axis without having repetitive code
+  -Normalize the speed of the rotations since it moves faster when spinning across multple axes
+  -Possibly make the modelSize proportional to the window size : NO
+
+Thats all :), thank you
+
+-Change what renderUtility returns
+-Change how renderer.js file processes rotation
+
+-Note, I dont think I need staticVertexList, and maybe I dont even need to increment the angle
+What I think I can do is make a local copy of the vertexPoint data in the function, then I use that and then I assign that to the vertexList outside of the scope
+Edit: Im wrong :(
+
+
+Sobasicalllyyyyyyyyyyyy... idk
+
+PROBLEMS I WILL FIX:
+  -Normalize speed of models                             {Wil not do}
+    -I wont do this since technically, I cant really normalize the speed of something because what does that even mean, like there are 3 different speed values, do I want to just like set them all to zero or something, obviously the speeds are going to be added together to gain a bigger speed, thats the whole point of the speed values, to combine them to get a larger speed, to rotate them faster, Normalizing it doesnt mean anything.
+  -Find out how to not have repetitive code              {Done}
+  -Possibly change return values of matrixMultiplication {Done}
+
+
+Okay so lets think thru this logically,
+If I want to add matricies together, I have to add them based on the latest poisition
+
+Okay with aboslutely zero research done, ive decided to average the individually rotated matricies together and see if that recreates the smae output as the sequentially added ones.
+
+Lowkey I just keep a log of just attempts at fixing this cuz lowkey some of these bugs look crazy.
+
+Oh yeah btw my idea failed misreably, wtf is code if code is meant to be logical this shit is anything but logical there are so many fucking edge cases. Why TF did I choose this career path.
+
+So instead what I can do is have a varialbe that gets updated with the latest positions, and I do that instead.
+I am very pleasantly suprised, I finally got my code right and it is a TON simpler than what I thought, I was just approaching it wrong with the wrong way of thinking... Cool :)
+
+So Note: Trying to pause the program while tab is not in focus is trivial because although my code still runs in the background ,it runs less frequently and even if it was the tab is smart enough to not render whatever it is im trying to render, it doesnt matter. Im trying to pause my program but chrome is already doing that for me. Plus, even if I continued trying the event listener along with document.hidden are REALLY finicky so I wont bother trying to make it "better".
+
+So anywyas, what this all means is that I can finally start working on quaternions!!! Yayyy
+
+So something I can do to "normalize the speed" is to take the lowest speed out of all 3 axes and set that to one, and the scaleFactor that I used to make that one I apply that to the rest of them, so then I multiply that to make the biggest one 1. There.
+
+Okay so so far in the rendering pipeline I have-
+  -Transform model's vertex points
+
+  -Loop
+    -Rotate model points
+    -Apply projection equation
+
+    -Render model points
+
+Note: Quaternions are sequential
+
+Okay so basically, just a quick note that I plan to normalize the speed of rotation
+
+Notes-
+  -I want to change the way I normalize the size of the models
+  -I want to normalize the speed of rotation (correctly)
+  
+  -I want to rotate the model using quaternions instead of matricies (WILL CHANGE A LOT OF CODE)
+
+
+So I can either change the vertexList structure everytime I need it to. 
+Or I can have two copies with different structures, and everytime I change one, I change the other one.
+
+Problems with the first one-
+If I am having a rendering pipeline in this loop, some things might need different structures, so im changing the structure multiple times in one iteration.
+It could also cause inconsistency among my code since some code is specialized for a different structure
+
+Problems with second solution-
+I would need to constantly be copying the code of the first one into the second one.
+Or I could have two main strucures, where everytime I need to use a different one, I copy all of the code and use that one, then I transport all of the code back to the first one (main one)
+More inneficient than first solution. I dont wanna have to go back and forth for something with a probably easier solution
+
+Idealy, I could have one structure that works for everything, but alas, thats just not possible
+
+final thoughts-
+  -Have one structure as a way of having a list of the different verticies and just deal with it
+    -Problem is that throughout my code it could change and some parts would be really simple while other parts would be really inneficient
+  -Have one main list, changing in strucure whenever I need it to
+    -Inconsistensy and having to change it multiple times in one iteration is kinda tedious.
+
+  So far, I only need that strucuture for my init function. So I guess I can just change it to my normal strucure once im done with that ig.
+
+WILL GO WITH THAT SOLUTION. IF I NEED TO CHANGE STRUCTURE MULTIPLE TIMES THROUGHOUT, WILL IMPLEMENT FUNCTION THAT CHANGES STRUCTURE AND USE IT MULTIPLE TIMES PER ITERATION.
+
+
+export function changeVertexStructure() {
+  //Write something in here
+}
+
+qqqqqqqqqqqqqqqqqqqqqqqqqq|
+iiiiiiiiiiiiiiiiiiiiiiiiii|
+llllllllllllllllllllllllll|
+qwertyuiopasdfghjklzxcvbnm|
+I think this font is monotone, there is a chance I will use this font in my final render.
+
+Things I need to add-
+  -Normalize rotaion speed
+  -Change way I normalize models
+  -Add a function that changes the structure of the vertexList (maybe create it into a function | or not)
+  -Change the way I call the renderUtility functions (maybe)
+
+  -Add vector multiplication functions
+  -Add quaternions
+
+To-do List-
+  -Add the second part to my 'changeVertexStructure' function {NOT DO}
+  -Test the second part to my 'changeVertexStructure' function {NOT DO}
+  -Add size value to the updated vertex structure              {NOT DO}
+  -Change the rest of my code so it aligns with my altered code
+
+
+
+        //Change the structure of the vertex list
+      export function changeVertexStructure(simulator, structureType, vertexList) {
+        let updatedVertexList = structureType === 1 ? [] : {};
+
+        for(let i = 0; i < simulator.vertexList.size; i++) {
+          switch(structureType) {
+            case 1:
+                updatedVertexList.push({
+                  x: vertexList.x[i],
+                  y: vertexList.y[i],
+                  z: vertexList.z[i],
+                });
+              break;
+            case 2:
+                //Write something here
+              break;
+          }
+        }
+
+        if(structureType === 2) updatedVertexList.size = vertexList.length; 
+        return updatedVertexList;
+      }
+
+
+Ignore stuff above-------------------------------------------------------------------------------------------------------
+
+Update for the changeVertexStructure function I scrapped it since I found out that having multiple of thsoe functions in series causes it to break and not work properly so I just scrapped it instead of trying to find a work around since it will probably be janky and be minimal at best, plus I dont really think that ill need to be switching between structures that often, unless im mistaked which in case I will bring it back and continue working on it.
+
+ANYWAYS...
+
+I just scrapped the function and did 1 conversion to to the "normal structure" within the modelInit function since it it "initializing".
+So then I will convert everything to fit that strucutre but something else thats more important is... ->
+
+BUG REPORT---------------
+  -Something is wrong with the modelInitialization (mainly model's posiiton) {Fixed}
+  -Unbalanced model rotation speed
+  -Normalization of model sizes                                              {Fixed}
+
+TO DO LIST---------------
+  -Rewrite entire modelInitialization function {Fixed}
+  -Normalize model rotaion speed
+  -Change the way I normalize the model sizes  {Fixed}
+
+  -Add vector multiplication functions
+  -Add quaternions
+
+
+Okay so I fixed the modelInitialization function problem, and a possible problem I couldve encountered was that the rotation would be weird since it would be rotating off of the axis midpoints but I figured out I can just fix this easily. But actually, Im not sure which way I will rotate it, becaue both ways are similar, but one or the other can acheive a better effect that I want, so I dont know yet. I will put that off until I get to it and figure it out.
+
+Fun fact I just learned, I had this exact problem like a month ago, if you look back at some of my notes, you can see me describing this exact problem, idk why I decided to comment this I just found it kinda funny.
+
+I normalized the rotation speed, I just need to implement quaternions now, also side note I might need to add some arbitrary speed scale factor since the speed being normalized to one might be a little bit slow
+
+Okay so I need to fix the rotationNormalization thing
+
+
+All axes would add up to 100% or -100%
+Speed would go from 0 - someArbitraryLimit
+
+Need to find out if there is any rotation
+Need to normalize rotation axes            {DONE}
+Convewrt the rotationSpeed into radians {DONE}
+
+Update the if statement at the top of the render function
+
+So basically rotate once if ->
+
+(There is no rotation AND InitState is false) OR if the window is hidden
+
+So basically if there is no rotation
+And that is only true when
+
+Axis of Rotation is false | no rotation
+Speed is false            | no rotation
+NO ROTATION
+
+Axis of Rotation is false | no rotation
+Speed is true             | rotation
+NO ROTATION
+
+Axis of Rotation is true  | rotation
+Speed is false            | no rotation
+NO ROTATION
+
+Axis of Rotation is true  | rotation
+Speed is true             | rotation
+ROTATION
+
+NAND Gate
+
+I beleive that everything in the constructor function is true. So now that just leaves the implementation of quaternions and figuring out how I should describe the vector in the rotation object
+
+Notes----------
+  -Maybe combine for loops together in modelInit to simplify it                          [Done]
+  -Maybe create functions for different functions of modelInit to make it more readable  [Done]
+  -Maybe add more comments to make my code easier to understand to an outviewer
+  -Fix structure of functions in renderUtility
+
+-Ok so I almost have a clear understanding of how the UI will work, I just need a tiny bit more clearance and ill start to work on it.
+-Also irrelevant but I will also work on updating the model whenever you enter/exit fullscreen mode
+
+UI------------
+Speed wil be from -x to +x
+
+Okay so ive realized that having a UI with double cover is nearly impossible while still maintaining intuity.
+So I guess ill just have to deal with it.
+The only way I guess I can limit double cover is if I remove the nagative part of k. So that there is only a hemisphere and that way there can be no double cover
+But what if I manage to do that while still maintaining intuity.
+How...
+
+X: -100% - 100%
+Y: -100% - 100%
+Z: 0% - 100%;
+
+What if its stil the same size I just change the minimum value of z to be 0 instead of -100%
+Also, instead of having a long slider I have a checkbox that changes it to negative, that way the display matches the total result.
+However the notes above are just theory. Not set and stone.
+
+Rotation Pipeline-----------------------------------------------------
+  -Define quaternionRotation = {};                                                                     [Done]
+  -Define rotationAngle = 0;                                                                           [Done]
+
+  -Increment rotationAngle by rotationSpeed (reset at 360)                                             [Done]
+  -Set quaternionRotation as:
+    -quaternionRotation.w = Math.cos(rotationAngle);                                                   [Done]
+    -quaternionRotation[this.axis[axis]] = Math.sin(rotationAngle) * this.rotation[this.axis[axis]];   [Done]
+  
+  -Set vertexList to be the staticVertexList                                                           [Done]
+  -Pivot model to origin                                                                               [Done]
+
+  -q * p
+  -Get Conjugate of q -> quaternionRotation[this.axis[axis]] *= -1;
+  -q^-1 * p
+
+  -Pivot model back to origin
+
+
+ITS WORKSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+Omfreaking gosh it actually works.
+Like what 1-2 months on just fucking quaternions and I did it, and it works???!!!
+Lets fucking go bitch it works!!!!!!!!!!!!!!!
+(Lowkey tho I had to use chatgpt to fix the problem but shhh)
+IT WORKSSS!!!!
+
+Btw the probme was with the crossProduct function, im not entirely sure what was wrong with it but I just did what chatgpt said and it works now.
+
+Cool it works now but I still need to do a couple things before I start flexing on people (AKA: forcing people to watch what took me 4 months to make and shove big math information down their throat)
+
+-Clean up rotation function
+-Find out whats wrong with crossProduct function and fix it
+
+Its done, I showed it to at least one person, they said it was cool
+Imma go to sleep now, it is currently 1:17 AM when I just finished the renderer at 1:10 AM. 
+
+Before I go to sleep, I will note that the rotation seems to break down whenever I type in any number other than 1, and that also the rotation does in fact need to be centered in reference to the centroid so I will start working on those problems tomorrow morning.
+Anyways imma go to sleep now, im tired.
+
+Model size is increasing and decreasing   {Fixed}
+Rotate model on centroid
+
+Rotate model on centroid
+Maybe add some helper functions
+
+Okay so I tried to rotate the model on the centroid, but it seemed to cause more problems than solutions. So I want to know whats going on.
+
+Okay so the things I want to have is the model at the center of the screen. And for the model to be rotated at the origin point (on its centroid).
+
+And to solve the second problem. I transpose the models centroid to the origin point.
+
+But together, how do I do it...
+
+I have two options-----------------
+  -I have the model centered on the screen via the centroid
+  -I just transpose it via the focal length
+
+  -I have the model centered on the screen via the midpoint of the axes {Doesnt work without doing some weird stuff which I dont understnad why it does that}
+  -I transpose it via the centroid
+
+
+-Red dot is window center
+-Blue dot is model centroid
+-Green dot is midpoint (of axes)
+
+-Could have a key to top left
+
+
+
+Okay so heres my note------------------------------------
+Constant: The model will be rotated on its centroid
+
+Variability (2 Options):
+  -I center the model based on the axis midpoints
+    -I center the z-axis based on the axis midpoints
+    -I center the z-axis centered based on the centroid
+
+  -I center the model based on the centroid
+
+I have done some of this, but its really hard to tell whats going on, so I might recreate all of this in desmos just to see whats going on.
+Not before I do all of my homework cause I am really falling behind.
+
+The problem im faced with is the centering of it.
+Im struggling with this because I want it to be as centered as possible
+I can test this in desmos
+
+I can actually test this better in my programming
+  -I just create a bounding box and I center each moel differently
+  -I also have a point signifing the center
+
+Also... DO I INCREASE THE MODEL SIZE OR NOT???? ---> No
+
+I have made a big decision.. I have decided that I will center the model based on its centroid instead of the midpoint of the axes
+
+Ok so this kinda sucks.
+So basically I want the model to be centered to the middle of the screen. But the centroid doesnt do that. So I will have to center it by the midpoint of its axes. Simple enough, but im doing this right now and its not actually centered on the screen. Which sucks. I dont know why but I need to fix that.
+
+So basically, I need to center the model by the midpoint of its axes. 
+
+So I want to center the model based on the midpoint of its axes. But it currently doesnt work, im guessing because the midpoint of z is off. So instead, I will center that on the centroid of it.
+Then, I will have to 
+
+Okaaaayyyy...
+This kinda sucks, the code is right (midpoint alignment). Its just the perspective equation that fucks everything up.
+And so this is what I will need to do. (I will do the proccess in 1 axis first (y axis) since its simpler to explain that way)---
+
+I need to find out what the highest and lowest point is on the pyramid in the y direction. And I need the highest and lowest points to equal zero. And so that means that I need to find out what the translation I need to do this.
+
+Or, I can just get the highest point, and find out how much I need to translate it by to have it equal to zero.
+And I have to do this in account for the perspective equation. (wppe)
+
+Note: Nothing is wrong, the projection equation is working correctly, the model is centered correctly, and it just looks not centered because of the way the projection equation works, and if you were looking at it in real life, it would look correct (the same).
+
+If I want to have the desired effect I want, I would need to artificially move it to make it centered.
+
+
+
+
+Okay, so ive decided that for now, I will just leave the model position set to be the centroid since I need a freaking break from this (My brain is acc fried)
+So for now, I will just position it based on the centroid, and I will just leave that be.
+I will also (hopefully) be starting on shading of the model.
+
+
+Current Bugs-----------
+  -Update model position when model has no rotation and user changes fullscreen mode
+
+  -Fix the model position and center it to the middle of the screen
+  -Rotate the model on its centroid
+
+
+Random note but: Find out how to render a torus or any other curved 3d object cause the only way I can figure out how to do it is to have a buch on faces (which is bad).
+
+OKAY So,
+I have realized that I would want to center the model to the origin first, THEN have the projection equation, then center it again to the middle of the screen, which would call for a modelCentering function since I would need to use this in not only the renderer, but also whenever the user changes fullscreen mode.
+I just need to choose which centering mode I want
+
+I think that I would center it by the midpoint cause then it would more accurately display what the user sees. So.. yeah.
+
+And that would also mean that I would need to find out a way to center it via its centroid for rotation.
+Then, I can also use that function in the simulator function
+
+Note in the render utility function I say simulator.whatever when it should be render.whateveriputnextidontrealllyknoworcare
+
+
+Okay for centering its a bit more complicated-
+I need to measure the axes again since that will change. Then, I need to translate the again based on the axes.
+
+Current Bugs-----------
+  -Update model position when model has no rotation and user changes fullscreen mode (main)
+  -Delete old code in main.js file
+
+  -Create midpoint function and replace old code in modelInit function {Done}
+  -Rotate the model on its centroid
+
+  -Center model during modelInit           {Done}
+  -Center model after projection equation  {Done}
+
+  -Make it so that the coordinate system is consistent (change y-direction) {Will not do}
+
+
+
+So to center it, first I will translate it by the conjugate of what I originally translated it by after the projection equation,
+Then, I will get the new axisLength
+Then, I will translate it normally
+
+IMPORTANT NOTE: So they way I center it in the modelInit function it works because the model's begining vertex point is at (0, 0, 0) (simplified). But if it doesnt work in the future, its because im not centering it by the axes midpoint.
+The only reason it works currently is because of the reason above/at least one vertex is touching the y-axis (or any axis (maybe) for that matter).
+(Unintentional forshadowing)
+
+Okay, so I have the function in modelInit and in the renderer. And so what that means is that if im not rotating the model its going to be going off twice per program. Only twice.
+BUT, If I have the model rotating, the function is going to appear in the rotation function twice, then again in the render function for every cycle. Approximately 60 times every second. which really sucks.
+
+So my immediate thought is to have 2 models.
+But a better thought would be to... actually im not going to talk like htis foreever cause it takes a stupid ass long itme and also bc im loosing my train of thought rn.
+
+
+-Model init at centroid (therefore staticVertexList at centroid)
+-Then, rotate without translation
+
+-Then in render func, move it, then move it again.
+
+That way, I only have to call the function twice every cycle instead of 3 times per cycle.
+Or I could just correspond each vertex to the point at which it belongs.
+
+Another thing I could also do is to simplify the code in the function so it isnt as inneficient, but the problem is that its as efficient as it needs to be.
+
+What im trying to say is that regardless of what happens, if I have rotation. I will need to translate it.
+
+-Rotation              (staicModel is at (0, 0, 0))
+-Translation           (back)
+-Shading function
+-Projection equation
+-Translation (again)
+
+-ModelInit (center model via centroid)
+-Rotation  (dont translate)
+-Shading   (translate back)
+
+Tbh I dont really know what im doing, all I know is that I want to limit a function as much as possible.
+
+
+So, there are two posibilities of my program, rotaition and no rotation-
+  -Rotation
+    -ModelInit to centroid
+    -Rotate (w/o translation)
+    -Translate twice in render func
+
+  -No Rotation
+    -No translation
+    -Translate twice in render func
+
+Even with shading, there will only be two instances of my translate function
+
+ONE THAUSAND MILESTONEE LETS GOOOOOOOOOOOOOOOO (Okay but ngl that actually crazy that I have over a thausand lines of just comments to myself, wow.)
+
+Okay so that makes sense, but is there a way I can do this without calling translate function so many times?
+Maybe I already have an instance of the vertex strucutre, but I dont really know.
+
+What would work is if I change the vertex structure in the first translate function that way I dont have to 
+
+modelCenter(centroid);
+modelCenter(midpoint);
+modelCenter(midpoint);
+
+
+centroid -> {
+  //Change vertex strucutre
+  //Take average of each axis
+  //Return average value
+}
+Note that nowhere above does it take the average midpoint, but something that is the same is that it changes the vertex structire, something that is critical to translating the model.
+So that means I have to minimize the amount of times I translate it, but also that I might need a function dedicated to this.
+
+Okay but at the same time, the only issue at play here is that I have to transform vertexList every cycle.
+
+So that mainly means I have two types of functions, centerCentroid, and centerMidpoint.
+Each one of those has a function that changes the vertexList structure.
+Two times per cycle
+
+So one way I can simplify it is by already having the correct vertex strucutre. But at the same time almost immediately ill just change it back, and extra code so thats kinda out the window.
+So the only way I cam simplify it more is by having a seperate vertexList with that type of strucuter. But I dont know if that solves the issue im facing.
+
+Random thoughts: These notes can give a hint as to what I was and how ive grown and like my knowledge and my current mood and thoughts in that time period. Also with that being said, I could have like time-stamps to show when I wrote this stuff.
+
+Anyways I got really sidetracked I was seeing how slow the computers are in the school computer lab. (Theyre really fucking slow like its not even funny I couldnt even open a google tab without it freezing for like half a minute).
+
+
+So after a lot of thinking, I dont think that having a seperate vertex list would be that beneficial. I mean the only really beneficial thing I could do I think is changing the vertex structure in the render function since after that, I would not need to have a specific vertex structure. But then again the extra code seems a bit extra especially for what im avoiding, I mean, its not that hard... Maybe...
+
+It would be simpler if I just had one vertetx list with one CONSISTENT structure. I feel like consistensy is a really big part of all of this, and being inconsistent is really dificult to keep track of, the code itself would be simple but I would be jumping around and doign random shit for the slightest increase that I just dont think is very worth it.
+
+FINAL DECISION--------------------------
+SO, my final decision, I will not be changing the vertex list strucure nor have any external structure.
+What I will do is I will change the centerModel function to also support the centroid, not just axis centroid. What that also means is that I can have the vertex structure change code in the centerModel function instead of having seperate ones for each sub-function().
+
+Also, in the modelInit function, I wont center it if theres no rotation, but I WILL center it by the centroid if there is rotation.
+Then, I will center it by the axis midpoint twice in the render function.
+That equates to a(c) = 2c + 1 | Twice per cycle, plus one for the model init.
+
+I just found out that I get +4 hours worth of free time while in school! Thats actually crazy man what the heck?! Thats sick ngl.
+Actually not sick bro everyone in my free period is fucking depressed, but only on friday. Also side note Why The Fuck are there so many people in my fucking free period on friday, but only on friday, like every other day its just like at most 10 people, but then suddenly on friday nearly every single fucking chair is taken up and I got the most bullshit seat in a corner between two peple. Like wtf man. Other than that its cool ig, but ill only have this for another 3-4 weeks, then the next semester will begin where I have to pick an actual class. Also I just go reminded WHAT THE FUCK IS MY ENGLISH ASSIGNMENT I SWEAR TO GOD EVERYSINGLEFUCKINGFEMALEENGLISHTEACHERWANTSTOFUCKINGTORTUREMEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE. Like I dont care if im being sexist actually Ill be proud if im sexist cause tell me why the fuck does every single female english teacher ive had want to fucking flip me over upside down and butt fuck me riding myfucking dick 24-7 every fucking school year like WHAT THE FUCK Ms.Steinhauser.
+
+Anyways, I got on a little rant there mb.
+So the only time I will need to translate it is after the rotation, and before the projection equation.
+
+But when I add shading to it, I will sitll only need to translate it once, the only difference is that the translationg will appear after the rotation and before the shading. And thats the only time I will translate it because ive realized that translating it after the projection equation makes the model move in really ugly ways.
+Also ive found out that I dont need to translate the model to the centroid since originally I did that because then the model would move (off centered) since it wasnt being rotated on its centroid, so I did that, but now, it doesnt matter since ill just translate the model after the rotation, and that doesnt change the orientation of the model so its okay.
+
+So the only other time I will need to translate it is when the user is changing fullscreen mode.
+So that means that now ive managed to decrease the modelTranslationg from 4, to 3-2 to now just 1, which I just find kinda cool.
+
+Okay, so now imma try and switch to the centroid, and not its midpoint
+
+Okay, so what I need------
+  -Need to center it by its centroid in modelInit
+  -Move model back in rotation equation
+
+  -Create a center function (centroid) so when I can center it in modelInit but also in simulator (technically only the y-axis changes so I might do somethiing about that)
+
+  centerModel()
+    -Dont move model back
+
+    -Maybe make more efficient by only deciding to do certain axes
+
+The main difference is that there isnt a consant loop so I can remove a lot less things.
+
+-Run once in modelInit
+-Run again if fullscreenmode is changed (position is changed). I need to call it again.
+
+-Okay, right now my renderer is in shambles, and so am i. So what I will say is that the notes, polygonMeshData, and renderUtility are all correct.
+The problem im trynna fix rn is the centering, so I will have 2 versions. One that centers via midpoint. And another one that centers via centroid.
+
+
+-------------------------R E S T A R T I N G------------------------------------
+Note: Okay im not really restarting its just that these past weeks both my notes and code have been so jumbled up im just having a giant divider to just re-organize my thoughts
+Note: I will also try to take a break from this because I feel like that will help clear my mind and start coding good again
+
+Off-topic but important note: Delete my google account from other people's devices. I add my account on my friends computers and if they open my renderer that could mess up some stuff so bad, very very bad.
+
+Okay so I have it mostly right, If anything I need to check if its actually centered, because it almost looks slightly off.
+Nothings wrong, its just perspective with the center reference point
+
+Things I want to implement-
+  -Shading
+  -Curved surface generation
+  -Good centering of the model (I dont know if this is possible)
+
+Okay so ive basically moved on from my centering thing, and now what I want to do is to implement shading
+To do this, I will use a slight variation type of the diffuse reflection equation to provide shading.
+First, I will do flat shading with just the polygons
+
+Then, maybe if I feel like it, I will move onto Gouraud shading, maybe with specular highlights. After that, maybe I can treat each group of polygons in a face as one big polygon, then, just take the normal vector from the middle of that.
+Also with that being said, I will test from where I take the normals, wether I take them from a vertex, or the centroid of the polygon.
+
+Cool, so I have a plan for right now, I will continue to reasearch more about shading and light.
+
+Some things that I want to reasearch more about is specular highlights, shading a triangle/gradiant, and the different types of shading and how to implement them.
+
+Note that if I do use ambient light, that I will have to use back-face culling
+
+Okay, so I have a sort of plan-
+  -For shading, I will be using flat shading for each of the polygons,which is a triangle. So that means that it will look a little bit weird but thats okay for now. 
+
+  -Something that im not sure is if I will be using ambient light, because if I do, then that means that I will need to use a hiddenSurfaceRemoval algorithm to fix it.
+
+  -But then, at the same time, if im only using a point light, im not sure if I will still need the algorithm. So that means that that will be put on hold. (Shading)
+
+  -So that means what I will be working on right now is the back-face culling algorithm. How... that will be kinda hard because I want it to be semi-permanent so I will have to actually think about this.
+
+Okay, so ive done a little bit of coding (the whole day), and ive managed to get both back-face culling, and the surface shading working, but not both at the same time.
+If I managed to get both fully working at the same time, it would work best, with little or no immediate bugs.
+
+But I do want to make a couple of notes for each algorithm.
+
+HSR algorithm---
+ -Do note that I need to sort the faces, 
+ -I might experiment with putting the ray at the middle of the polygon whereas at the vertex
+
+Surface shading---
+  -Maybe provide some sort of ambient light
+  -Experiment with putting the ray at the middle of the polygon whereas at the vertex
+
+Note that for the faceList, each index in the list is going to have an object with structure: {face: 0, color: 0}
+Also maybe in the near future when I have faces with different numbers of verticies, I can add another key to my faceList object that tells how many verticies are in the face like {face: 0, color: 0, vertexPoints: 3}
+Maybe vertexLength: 3,
+
+Okay so im changing the thing so that it uses the left-hand rule this time. Properly
+
+Okay so in the surfaceShading function, in the first loop, I want to change a lot of things-
+  -Mostly rewritting the long lines
+  -Changing the comments
+  -Changing the viewVector to find it from the centroid
+
+-For now act like the triangles are permanents so code like they are.
+
+I need to create a new variable thats something like this.vertexList[polygonMesh[this.model].face[n].n].n
+n is a variable that you can put in.
+
+so something like
+
+this.someVariable = {index: null, vertex: null, axis: null}
+polygonMesh[
+  
+]
+
+wait no so it'll be a function with arguments (index, vertex, axis),
+and it will return
+
+this.vertexList[polygonMesh]
+
+for() * 2
+['v1', 'v2', 'v3'].reduce((sum, value) => sum + this.vertexFace(i, value, this.axis[axis])) / 3;
+
+Okay really quickly since I have 5 minutes left:
+  -I need to clean up surfaceShading func
+  -I need to fix viewVector since the y is flipped
+
+  -I need to make absolutely sure that everthing is right since I switched my coordinate system (will fix flipped y)
+
+Okay so im almost finished with shading, some things I want to change/experiment with:
+  -Try using right-hand rule instead of left-hand rule
+  -Try using inconsistent amount of verticies for each face  {Done}
+  -Fix centroid code in surfaceShading                       {Done}
+  -Fix draw function                                         {Done}
+
+Okay so I have mostly everthing I wanted done/fixed, now there are only a couple more things I want to fix before I start the next segment of my coding project
+  -Fix back-face culling bug
+  -Find out and fix why color depth is constrained higher than it should be
+  
+  -Find out why I have to flip dot product negative whereas in paper
+  -Try using right-hand rule (to possibly fix bug(s))
+
+I think the reason why the dotProduct turns out negative is because the focalLength is in a different sign than the model. LIke the camera is at -15, while the render is at +something. This is because I made the screen at z = 0. So different signs means that the dotProduct is going to be calculated a bit differently, hence, the sign flip.
+Edit: Yup, I just proved this, this is in-fact whats happening. I dont really know if this is a good thing or not. Maybe neither cause im just scared that this little inconsistency will mess with my renderer... We'll see
+
+Also I think becasue the camera is a different sign, that also creates some of the visual bugs that im seeing. So ill try to do something about that. Maybe not right now because im actually getting sick of coding this shit. Like actually. Maybe for the next couple of weeks are months im going to just be doing roblox studio, or maybe even  not that, maybe ill get my life in shape and start going outside and enjoying what nature has to offer.
+
+Okay so note that as soon as 
+Olay so from what it looks like, it looks like some of the vector are mis-aligned becasue the faceList changes before I actually see them pop up.
+Also the bugs, are actually just the faces, and the color-clamp does happen, its just really slow and un-noticable since the bugs are there and it happens really fast.
+
+Soooooooo, the plan is to find out what is wrong and to fix it. Im assuming some of the vectors.
+
+I think the artifacts are coming because of float-point math because since I use deltaTiming that creates a really long float number and that causes precision errors so then that caueses the artifacts. Which means, that maybe, if I remove deltaTiming it will remove the artifacts, however this isnt
+
+Okay so part of it seems like its the float point arithmetic, but that isnt exaclty the issue of the artifacts im seeing
+
+Okay so I was wrong about the float-point arithmetic, that was not really part any issue. What was an issue was the vectorMagnitude.
+What happened was that I was defining vectorMagnitude 3 seperate times. And each time, I would pair it with normalizing the vector, so, whenever that happens, the vectorMagnitude gets updated whenever its not supposed to. So that was causing all of the artifacts and issues I was facing.
+Anywyas, thats fixed now, and also I figured out how to clamp the values so its always as dark as the background and as bright as 255 - ambient light. (Technically ambientLight * 2 but I dont wanna explain that rn).
+
+Okay two more things I want to do. Set the tetromino faces, and double check pyramid mesh. {Done}, {Done}
+
+
+Okay line drawing algorithm possibilities-
+  -DDA Algorithm
+  -Midpoint Algorithm
+
+Ive chosen the DDA algorithm. This works well, however I have (chatgpt) optimied it so its not as bad performance wise.
+So I have the DDA Algorithm.
+
+So, I will have the DDA algorithm for the line-drawing
+But with that done, I also want to make my code more efifcient cause a lot of functions like the shadingAlgorithm and the rotationFunction are really inneficient and slow.
+So thats another thing on my to-do list
+Also note that the line algorithm doesnt fully draw all of the details so im going to do something about that. I might leave it be or do something about it idk
+I think that the low-res line is better because its less efficient than the high-res line by 10, but also that with multiple lines on-top. It's the exact same as the low-res line just that the edges of the top and bottom line are low-res. But that doesnt matter since im putting a polygon on top of it.
+
+
+
+
+IMPORTANT RASTERIZATION NOTES---------------------------------------------------------------------------------------
+OKAY... Line rasterization is extremely frustrating wow... ok.
+
+Rasterization variability-
+  -Line defenition
+  -Line variable
+  -Have all code in the function, no external stuff
+  -Set variable names
+  
+  -Filter edgeList
+  
+  -Either:
+    -Average face colors out in edgeLines--------------------------  | high definition | (easier but doesnt look as good)
+    -Shrink faceSize by its centroid, then rasterize faceEdgeLines-- | low definition  | (harder but looks better)
+
+I necided I will do the much harder version.
+However because of chatGPT, ive found a better way.
+
+Check the two values in the lines
+If the values correspond to a face where some of its values are the same as those in the edge.
+
+Then, to check if its in the middle, I can check if the edge belons to two faces, if it doesnt, its at the edge.
+Also, I can maybe skip the first step if im smart about this
+
+Create an edgeList based on like
+
+I HATE THISSSSSSSSSSSSSSSSSSSSSSSS
+
+I want line-rasterization to be as efficient as possible
+Also, in miscellaneous, maybe I want to check if that function can also be used for lines
+But I just dont know how to do it.
+
+TO-DO List-
+  -Make Code more efficient
+  -Implement line-drawing algorithm
+
+-----
+I think instead of just having all of the surfaces in one big list in the surfaceList, I process them one at a time and I have an external loop inside of the surfaceShading function.  (Done & Fixed)
+
+Okay so first I will fix the surfaceShading function so its not as stupid (Done)
+Also, I will have a helper function for the projectionEquation() since I will and have needed it in multiple instances. (Done)
+
+What to do about stuff like faceList and lineRasterizationList idk yet. For now, ill just ignore those
+
+Also, I wil change mapToPixels to be open to any lists (w xyz) not just vertexList (Done)
+-----
+
+Todo list-
+  -Fix surfaceShading func                    (Done)
+  -Implement lineRasterization                (Not done)
+  -Change/add functions to renderUtility file (Done)
+
+-Possilbly set a variable for the numberOfFaces cause im reusing it many times throughout the class
+-Possibly expland the this.vertexFace function to also include lines (NOT NECCESARY)
+
+Ive realized that even though the timeline log says that it takes me about 2 weeks per implementation thing I realize that I spend every day coding so a couple of weeks is a really long time considering the amount of time I spend per-day just programming...
+
+Note: Chatgpt saved my code and my computer from breaking into a million and 1 peices after I smash in into the ground because my code wont fucking work for the 67 damm time in a fucking row. And chatgpt does it in a couple of seconds..,.,,.......
+Now I understand why art people hate ai. But ill still make fun of em regardlesss
+
+So for scaling, what scale factor makes the pixels move by half of the pixelSize.
+
+------------Debugging code for pixelated lines
+ctx.fillStyle = 'blue';
+for(let x = 0; x < this.a.length; x++) {
+    ctx.beginPath();
+      ctx.arc(this.a[x], this.b[x], 2, 0, 2 * Math.PI);
+    ctx.closePath();
+    ctx.fill();
+}
+
+ctx.fillStyle = 'white'; ctx.font = '25px Arial';
+ctx.fillText(this.a.length, 25, 50);
+
+//different variations of translating the pixels
+let newX = Math.floor(x / this.pixelGrid) * this.pixelGrid;
+let newY = Math.floor(y / this.pixelGrid) * this.pixelGrid;
+let newX = x; let newY = y;
+------------
+---------------------------------------------------------------------------------------------------------------------
+
+OKAY... So ive actually done a ton of progress today, ive finally implemented a working and hopefully lasting function of code that works very well! Its simple, not very consice, but otherwise clean. Now, the daunting task of coloring the lines, because I need to learn which faces the lines belong to, and to decide which one is closer and then use that information to color the line
+Its daunting because I need to change the structure of some of my code, and also possibly rewrite a lot of it along with new code and to have different systems interact and such. And it sounds complicated and it kinda is, but truthfully, it is still a complicated task that I need to complete. So, ill jsut update my log and start working on it today if not hopefully tomorrow.
+Also I just forgot... I also need to work on that game me and dusty have been working on. I stil need to find out a way to detect when a player steps on and off an arean. And I also need to start preparing to go back to school. Which is especially scary since I have drama this semester, which quite literally everyone has been saying that it is a horrible class. Soooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo, ill tell you how that class goes hopefully in this whole book that im writting.
+Also, I learned that a line thickness of 4 looks very good if I want to draw the wireframe of a model. (Jsyk)
+
+Edit: 2 months back into school, Drama is indeed as awful as everyone said it was. Fuck Drama. And fuck Ms Tanner.
+
+--------------------------------------------------------------------------------------------------------------
+IMPORTANT NOTE: I might change the way I sort the faces because right now, im not sure if it will hold up, so, I might sort it from color later on, but for now, ill keep it as it is. (EDIT: It did not hold up)
+--------------------------------------------------------------------------------------------------------------
+
+Something that I can do to help make this easier is to-
+Whenever I find an edge for a model, I take the face index from where I got the edge from, and add that into a new list along with the edgelist and so that way-
+I can end up with an this.edgeList that contains a all of the edges along with the faces that they correspond to, and that would still work with what I have currently along with also adding colors to my lines
+
+Okay, so I have "sort of" implemented the pixelated looking effect on the model, but there are several artifacts which I think are the cause of the lines not having a high enough resolution, so my two options are to increase resolution or to find another way to combat this.
+Or to look into it further and to see if its a different problem
+Another artifact ive noticed is sometimes there are some lines that are darker than other appear above lines that are more above and I can fix that with sorting the lines or to get the visible lines backwards instead sequentially forward.
+
+BUGS-----------
+  -High resolution
+  -Artifacts (low resolution) + pixel drawing
+
+-Things to fix/redo-
+  -Pixel resolution
+  -Decide to use math.round/floor/ceil operator
+  -Decide to artificially scale pixelSize
+  -Make more efficient (Set())
+
+  -FIX BUGS***
+
+Anways, after im done fixing the bugs that come with line rasterization, I will work on the character generation
+And after that ill start working on both the configuration settings and also on making the renderer more efficient
+
+RENDER EFFICIENCY:
+  Some ideas I have for that are to dont activate functions that arent going to be seen like if im working on only generating the polygons, I can completely skip over the line rasterization and character generation since those arent going to be seen
+  Another idea I have is to record the vertex positions & some other stuff after a full model revolution because after that its just the same thing and so that way I dont have to recalculate everything.
+    Just note here that there are A LOT of inneficiencies that i can fix heres to name a VERY few.
+  Instead of increasing step size in lineRasterization, I can just use ctx.rect() twice (this also means that I can divide step size in half)
+  When im done, instead of rendering all of the lines and then just picking out the ones I need, I can pick out the ones I need, then render them (For ASCII generation)
+
+
+Also just remember for later that if I want to be able to rotate the model by user input make it the options to control it either with the mouse or the arrow keys, and I can press shift + up/down to move it in the z-direction
+
+Note that a thick line/wireframe border looks REALLY good. But so does a thin border so idk Thats a setting ill have to add later
+-Anti-aliasing
+-Smth else x2
+Highly inneficient
+
+  -this.faceList.sort(0)       {Done}
+  -0.5 translation             {Not possible}
+  -math.floor/ceil line steps  {No possible}
+  -reduce steps                {Not possible}
+  -remove anti-aliasing        {Not possible}
+
+Increment must be less than half of pixelSize. So, with that being said, Or less than a pixelSize
+
+this.lineDrawer.increment[this.axis[axis]] = this.lineDrawer.distance[this.axis[axis]] / this.lineDrawer.steps;
+
+Steps is length / grid
+increment is grid, done
+
+-Efficiency {Actually dont need to}
+-Artifacts {Cant really do anything about them (Cannot do anything about it)
+-NumOfLoops {Done!}
+
+
+
+
+
+
+<!--Configuration screen
+    <div id='configScreen'>
+      <div>
+        <div>
+          <input type='checkbox' id='checkboxX'>
+          <input type='range' min='0' max='100' value='34' class='slider' id='rotationSliderX'>
+          <input type='number' min='0' max='100' value='34'>
+        </div>
+
+        <div>
+          <input type='checkbox' id='checkboxY'>
+          <input type='range' min='0' max='100' value='33' class='slider' id='rotationSliderY'>
+        </div>
+
+        <div>
+          <input type='checkbox' id='checkboxZ'>
+          <input type='range' min='0' max='100' value='33' class='slider' id='rotationSliderZ'>
+        </div>
+      </div>
+
+      <input type='range' min='1' max='25'>
+    </div>-->
+
+
+
+
+
+
+
+For ASCII Characters, I know that I can use ctx for it, but there are still some issues
+
+For ASCII Character generation, instead of doing it for every single shape, I can actually just do what I originally planned but for the entire model
+Also maybe Courier font is the way to go, it gives a very retro tech-feel that I think makes this program feel more special instead of modern
+
+  ***NOTE: Also, maybe dont make it so minimalistic, I think that gives it a modern look and takes away from how actually special this thing is***
+
+I think before I do anything that involves ASCII character conversion I will spend hopefully around 2 weeks just making everything more efficient and having the comments make more sense
+
+Note that there are some precision errors in line-rasterization but at the moment I only see one so im not going to do anything about it.
+
+The higher resolution you go, the less defined the thing will be, so I have do something about that... acc nvm Ill just reset the step size to be multipllied by 6 cuz tbh idc that much
+
+I cant follow the edges to the bottom because the order of the verticies in the edges are sorted and so unless I can unsort them or have a duplicate list, I can really do anything
+The sorted edges are crucial to having pixelated model render properly
+
+Since I manually remove duplicates, I can just use that to tell if an edge is inner or outer
+if it is a unique edge, then originally have outer edge tag, but if later find out it has duplicate, then find that one and revoke its outer edge part
+
+Okay so im really close to figuring this out (well part of it out), but I figured out which ones were inner and out which was easy enough, now I just need filter the ones that are to the left the model, which is not as easy, but still simple enough given enough time
+
+---if the x-values of the line are less than or equal to the right-most point out of the left-most top and bottom point.
+
+Okay so basically what I need to do is that since its steps I can just check if the current value is the same as the previous value and if its not then push it, but if its not then dont do anything
+
+For the filteredLineList, maybe I can map it to just the line positions
+
+Future idea: Use keyboard as shortcuts to change settings of renderer ex: +- will increase/decrease model size (focal length)
+Future idea: Maybe add motion blur to the model (especially with rasterizedLineList)
+
+-------------------------------------------------------------------------
+-Use Set() to remove duplicates in the rasterizedLineList       {DONE}
+-Change the visibleFaceEdges into an object so its not as vague {DONE}
+-------------------------------------------------------------------------
+
+EDGE GENERATION PIPELINE---------------
+  -Define all the edges by going counterclockwise for each face and recording the index of each vertex as tuples
+  -Then, I create a key based on the unique edges found in that faceEdge(s) list (also sorted by index *NOT ALWAYS THE SAME AS EDGE INFO*)
+
+  -Then, Create a list of the visibleFace Edges, and for each one I give a value [edge, faceIndex, key, type]
+  
+  -Filter all the edges where its the left-most edge that is outer
+  -Then, I create a list of all the pixel positions of that filteredEdgeList (referenced above)
+
+The reason why the top/bottom pixels arent filtered in is because the edge doesnt reach that far in to reach that pixel, and so if the data isnt there you cant manipulate it. So, if I really wanted that pixel to be included in I could just 
+
+I know why sometimes the very top/bototm arent drawn. Its because the steps, it starts at a certain point, but then, because of the steps, it doesnt always exactly align at the second point. This bug is only highlighted with the startingIndex value ive added. However, I dont know if removing it removes the issue altogether.
+I fixed it, it was because the number of steps was a float number so 1, the increment size was wrong, and 2, it would stop either too early or too late because of it.
+But anyways, I fixed it and im really happy.
+
+-What I want to do next is to filter the left-most pixels on the line, and to remove the pixels that are stacked on top of each other at the end of the edges. (However I think thats already taken care of with the want above)
+
+Note: I FUCKING HATE LINE ALGORITHMSSSS!!!!
+
+Really quickly before class ends just note that with the pixelated look there will ALWAYS be precision errors causing artifacts and theres nothing I can do about that. Kinda like sebastian lagues fluid simulator, I cant remove them all without sacrifing efficiency/having infinite memory
+
+Also note that diagonal lines are A LOT harder to render than regular straight lines
+
+Very cool note: I could make a game that revolves around 3d 2d sprites. Like I make a 2d game, but all the spirtes in the game are 3d, excpept they have no depth, so they look 2d while giving that 3d effect
+
+
+
+RENDER TO-DO LIST UPDATE----------------
+ - Add fill and rendering (display) style
+ - Check how pixelatedList looks like so add ASCII rendering
+ - Decide if I want to add 
+ - Maybe remove some redundant indicies in lineList(s)
+
+ - Make comments more clear for Landen
+ - Make code more efficient for larger models
+ - Import custom blender models
+ - Possibly turn all of this into a shader (or Landen does it)
+
+NOTES-----------
+ - Keep all 3 fill types
+ - We can do ASCII character lines even without the duplicates so that is what we will do next
+
+PROBLEMS--------
+ - Proper comments {Done}
+ - Consistency in programming format  {DONE}
+ - Fill & Display type
+- Add own custom blender models (closed, no textures, gray-scale)
+
+ - Efficency
+ - ASCII Rendering
+ - GPU Rendering
+
+
+Right, next order of business, fix line algorithm because something is causing the edges to be rendered in the wrong order, and also there might be something wrong with the way I remove duplicates
+Edit: I fixed it, what I did was just go through each face in reverse order, then at the very end, I reversed the rasterized list
+I went through each face in reverse order because in the render function, the order of the faces is from the most farthest away to the most in front, so I reversed that without changing the actual array in order to rasterize the faces in front first. Then I reversed it at the very end in order to have the order of rendering be back to front, just to make sure that no front faces were accudentally rendered behind any other faces. (6/6/25)
+
+
+VERY IMPORTANT THING TO TEST IN THE NEAR FUTURE: {FIXED}
+ - Maybe, just maybe, if I can, I can render the faces and edges by their respective color, for each color, I render the face first, then the edge.
+ But instead of the color I render it by the z-index in back to front. This is because z-index is always reliable instead of the color since the color doesnt change with distance. NOTE: This is to fix reasterized edges farther back rendering on top of the whole model creating that ugly thing that I see when I set it to pixelated solid torus
+ And this is done! I know this response is kinda underwhelming but it is currently 12:18 AM on July 27, 2025. But truthfully this is very exciting because this is a huge milestone, which means that im essentially in the end game. All I have is mostly UI stuff, and that will be it, I mean this will most likey take another month considering the pace im going and with everything else going on, and to be honest I am kinda dissapointed in myself considering how long it has taken and how it will still take this long for this thing but regardless this is a huge milestone and im very excited to finally maybe finishing this project! das it.
+ Edit: It is currently August 10, I go back to school in basically 2-3 days
+
+
+
+ ***IMPORTANT NOTE (like seriously)*** {FIXED}
+ MORE VERY IMPORANT THING TO TEST IN THE FUTURE. For the wireframe, sometimes the occluding edges still show, so I can probably fix that by just rendering a face thats the same color as the background, THEN render the edges on top of that.
+ This would be best optimized for the wireframe cull type so that hopefully I can remove that annoying bug for good without sacrifing much cpu power (z-buffering) {DONE!!!} Im actually really proud of this it was buggnig me how this just kept on happening but I fixed it, and the general idea behind it wasnt eve nthat hard! I mean the code to change was difficult because I needed everthing to work the same but very great!!!
+
+
+
+Note: I need to add a readme somewhere within this program
+Note the most amount of models you can keep in here is 10, technically, there is no upper limit I just put 10 because its a nice number and you can also no longer change models from the keyboard
+
+IMPORTANT NOTE:
+This model works best with closed, non-intersecting, convex geometry
+This model starts to fail with open, occluding faces
+
+This is best represented if you try to pixelate the donut, the donut has occluding geometry and edges appear where there arent supposed to be
+
+Also, later, hopefully now rather than later, I will add dat GUI onto my local disk because if then I wont be able to use it when I dont have wifi, like on an airplane
+
+Note: When comparing the most simplest type of rendering (full wireframe), to full shading, it takes 1.75x longer to render. Or in other words, it takes 75% longer, or it uses 1.75x more resources.
+With pixelated at its max (so when the renderer is using its maximum resources), it takes an average of 2.25x more than its simplest rendering. So, when using its maximum resources, performance drops 175%. Thats REALLY not good.
+
+Also note, I dont know why, I dont know if I already fixed this, but the thing about occluding faces is back again. This time, with the pixelated lines
+
+
+TIMELINE LOG------------------------------------------------------  
+
+12/4/24- Mostly finished shading aside from a few bugs
+12/7/24- Fixed artifacts in shading function
+
+12/11/24- Implemented basic DDA line-drawing algorithm
+
+12/17/24 - Changed surfaceShading function structure so its more efficeint and easier to work with and will act as basis for my lineRasterization function
+
+12/18/14- Implemented basic edge rasterization DDA line-drawing algorithm. (Rasterizes/pixelates edge lines of model). w artifacts
+
+12/30/24- Added both a dodecahedron and an icosahedron to my lists of models
+
+1/4/25- Implemented a working and permanent version of my lineRasterization function |
+        OVERVIEW: Medium-High resolution, no color yet, removed duplicates to improve efficiency, Hidden-line-removal
+
+1/17/25- Finally done with lineRasterization function
+_        QUICK OVERVIEW: Added color, changed lineRasterizationList structure to support color, reduced inneficiency/steps
+_                        Figured out that artifacts are bound to happen and theres nothing I can do to change that
+
+2/12/25- Ive realized that I have not been keeping track of this log so im going to briefly summarize:
+  -Changed DDA line drawing algorithm structure so instead of just random indexes they're objects and they actually have meaning now
+  -Added an inner/outer status for each line to determine
+  -I Have drawn and figured out an algorithm for generating ASCII Characters
+  -I Have found left-most edges of the model (very important for algorithm)
+  -I Have removed excess line position dupilcates from the rasterizedLineList reducing the clutter by ~52% (which im very proud of) (also suprisingly hard to do)
+  Note that ive taken a fairly long break from this and all of these is the work of about 1-2 weeks
+
+2/16:17/25- I fixed small artifacts in the line-drawer where the pixels at the end of lines sometimes werent being drawn.
+
+2/19/25- Changed resolution of line rasterizer
+
+2/27/25- Added dedicated keyInput file (however cant initialize variables in renderer's constructor yet)

@@ -1,0 +1,170 @@
+ import { readWrite_data } from "../modelSettings/dataStore.js";
+ import { polygonMesh } from '../render/polygonMeshData.js';
+
+export function modelSelectionBar(sim, type) {
+  // helper variables
+  let model = sim.polygonMeshRenderer.model;
+  let index = sim.models.indexOf(model);
+
+  switch (type) {
+    case 'Move Up':
+    case 'Move Down':
+        // find the new position the model should be at considering which way we shift the array
+        let newIndexPosition = type === 'Move Up' ? (index + 1) % sim.models.length: index - 1;
+        if (newIndexPosition === -1) newIndexPosition = sim.models.length - 1;
+        
+        // take out the model at the current index and insert it at the new index position
+        sim.models.splice(index, 1);
+        sim.models.splice(newIndexPosition, 0, model);
+      break;
+    case 'Add':
+        // open file manager
+        let input = document.getElementById('selectFile');
+        input.click();
+
+        input.addEventListener("change", () => {
+          if (input.files.length > 0) {
+            // find the file
+            const reader = new FileReader();
+            const file = input.files[0];
+
+            // read the file
+            reader.readAsText(file);
+
+            reader.onload = (event) => {
+              const fileData = event.target.result;
+              let fileName = file.name;
+
+              // check if the file type is an obj, if it isnt, alert, if it is, proceed.
+              if (!fileName.toLowerCase().endsWith('.obj')) {
+                alert('This file type is inconpatible with the renderer \n Please try and import a .OBJ file');
+                return;
+              } else {
+                // add a leading number if the model name already exists
+                let numberSuffix = 0;
+                while (sim.models.includes(fileName)) {
+                  numberSuffix++;
+                  fileName = file.name + numberSuffix;
+                }
+
+                // remove file type suffix
+                fileName = fileName.slice(0, fileName.length - 4);
+
+                // append the model to the database
+                readWrite_data('write', fileName, fileData).then(() => {
+                  // adds it to polygonMeshData and appends it to the modelList
+                  processImportedModelData(sim, fileName, true);
+                });
+              }
+            };
+          }
+        });
+      break;
+    case 'Delete':
+        // check if he model is imported, if so, then ask if the user wants to delete it
+        if (!sim.presetModels.includes(sim.polygonMeshRenderer.model)) {
+          let deleteModel = confirm('Are you sure you want to delete this model? \n This action cannot be undone');
+
+          // delete the model if user confirms
+          if (deleteModel) {
+            let prevModel = Math.max(index - 1, 0);
+
+            // delete the model from the database
+            readWrite_data('delete', model).then(() => {
+              // delete the model from the modelList
+              sim.models.splice(index, 1);
+              sim.polygonMeshRenderer.model = sim.models[prevModel];
+
+              //delete the model from polygonMeshData
+              delete polygonMesh.model;
+            });
+          }
+        } else {
+          // alert the user that they cannot delete a pre-existing model
+          alert('You cannot delete this Model, \n Please try and delete an imported Model.');
+        }
+      break;
+  }
+}
+
+export async function processImportedModelData(sim, fileName, updateRenderer) {
+  // the polygonMeshData for the model that is to be parsed
+  let objectData = {
+    vertex: [],
+    normal: [],
+    face: [],
+  };
+
+  // gets the model data
+  let fileData = await readWrite_data('read', fileName);
+
+  // makes sure the model data defined, if not, exit function
+  if (typeof fileData !== 'object') return;
+
+  let rawModelData = fileData.modelData.split('\n');
+
+  // face normals get reused so we put it in a seperate list and call them by the index stated by the faces
+  let normalList = [];
+
+  // parse the vertex, normal, and face data into the model obj
+  for (let i = 0; i < rawModelData.length; i++) {
+    // loop thorugh each line in the model data
+    let entry = rawModelData[i].trim();
+
+    if (entry.startsWith('v ') || entry.startsWith('vn ')) {
+      // push the vertex and normal data into their respective arrays
+      let [o, a, b, c] = entry.split(' ').map(Number);
+      entry[1] === ' ' ? objectData.vertex.push({x: a, y: b, z: c}) : normalList.push({x: a, y: b, z: c});
+    } else if (entry.startsWith('f ')) {
+      // exit the function early if face normals are not defined
+      if (normalList.length === 0) {
+        alert('Sorry, but some of the file data seems to be missing or incomplete. \n Please try and import a model that includes face normals');
+        return;
+      }
+
+      // find the vertex and face indexes defined by the data in the face entries
+      entry = entry.slice(2, entry.length).split(' ');
+      let currentVertexLine = entry.map(j => j.split('/')[0]).map(Number);
+      let currentNormalIndex = Number(entry[0].split('/')[2]);
+
+      // define the model faces
+      let faceData = {};
+      for (let j = 0; j < currentVertexLine.length; j++) {
+        faceData[`v${j + 1}`] = currentVertexLine[j] - 1;
+      }
+      objectData.face.push(faceData);
+
+      // append the face normals to the model object
+      objectData.normal.push(normalList[currentNormalIndex - 1]);
+
+    }
+  }
+
+  // add it to polygonMeshData (eg. where the model data is stored and retreived)
+  polygonMesh[fileName] = objectData;
+
+  // add it to model list
+  sim.models.push(fileName);
+
+  // update the renderer
+  if (updateRenderer) sim.polygonMeshRenderer.updateModelAttributes('model', fileName);
+}
+
+/*
+Test adding a new model
+Test adding a new model with smooth shading
+Test adding a model with the same name as a pre-existing model
+Test deleting a model (both pre-existing and imported)
+Test adding a model
+Test program startup with imported models
+
+Make sure we return an alert if there are no face normals
+Add error corrections. (fallbacks)
+Polish it up
+Rename stuff in configMenu
+*/
+
+/*
+Test error detection and how it looks both in alert and console
+Make sure importedModelData is correct
+*/

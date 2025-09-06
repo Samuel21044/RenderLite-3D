@@ -29,7 +29,7 @@ export default class Simulator {
 
     // Render the specified model
     this.polygonMeshRenderer = new PolygonMeshRenderer(this, 'cube');
-    this.models = ['cube', 'pyramid', 'dodecahedron', 'icosahedron', 'torus'];
+    this.models = ['cube', 'pyramid', 'dodecahedron', 'icosahedron', 'torus', 'wideTorus'];
     this.presetModels = [...this.models];
 
     // different ways of rendering the model

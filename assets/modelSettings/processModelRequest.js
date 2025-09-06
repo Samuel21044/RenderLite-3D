@@ -84,6 +84,31 @@ export function modelSelectionBar(sim, type) {
           alert('You cannot delete this Model, \n Please try and delete an imported Model.');
         }
       break;
+    case 'Rename':
+        // new model name
+        let newName = prompt('Enter new Model name here: ');
+
+        if (newName !== null && newName.length !== 0) {
+          // make sure the model name doesnt already exist
+          if (sim.models.includes(newName)) {
+            alert('Model name already exists \n Please try and choose a different name');
+            return;
+          } //else if () {
+
+          //} 
+
+          // write something here
+          // Throw an error if the user tries to rename the model presets
+          // Change the name in the model database & facely in modelList during the moment
+
+          /*
+          Reaons to throw error---s
+           - If name already exists
+           - If persons length is zero
+           - If user tries to change a preset model
+          */
+        }
+      break;
   }
 }
 
@@ -106,19 +131,33 @@ export async function processImportedModelData(sim, fileName, updateRenderer) {
   // face normals get reused so we put it in a seperate list and call them by the index stated by the faces
   let normalList = [];
 
+  let incompleteDataAlert = (type) => {
+    type === 1 ?
+    alert('Sorry, but some of the file data seems to be missing or incomplete. \n Please check the file and try again') :
+    alert('Sorry, but some of the file data seems to be missing or incomplete. \n Please try and import a model that includes face normals');
+  };
+
   // parse the vertex, normal, and face data into the model obj
   for (let i = 0; i < rawModelData.length; i++) {
     // loop thorugh each line in the model data
     let entry = rawModelData[i].trim();
 
     if (entry.startsWith('v ') || entry.startsWith('vn ')) {
-      // push the vertex and normal data into their respective arrays
+      // get the vertex and normal data
       let [o, a, b, c] = entry.split(' ').map(Number);
+
+      // exit early if data is not defined/numerical
+      if ([a, b, c].some(num => isNaN(num))) {
+        incompleteDataAlert(1);
+        return;
+      }
+
+      // push the vertex and normal data into their respective arrays
       entry[1] === ' ' ? objectData.vertex.push({x: a, y: b, z: c}) : normalList.push({x: a, y: b, z: c});
     } else if (entry.startsWith('f ')) {
-      // exit the function early if face normals are not defined
+      // exit early if face normals are not defined
       if (normalList.length === 0) {
-        alert('Sorry, but some of the file data seems to be missing or incomplete. \n Please try and import a model that includes face normals');
+        incompleteDataAlert(2);
         return;
       }
 
@@ -126,6 +165,12 @@ export async function processImportedModelData(sim, fileName, updateRenderer) {
       entry = entry.slice(2, entry.length).split(' ');
       let currentVertexLine = entry.map(j => j.split('/')[0]).map(Number);
       let currentNormalIndex = Number(entry[0].split('/')[2]);
+
+      // exit early if data is not defined/numerical
+      if (currentVertexLine.some(n => isNaN(n)) || isNaN(currentNormalIndex)) {
+        incompleteDataAlert(1);
+        return;
+      }
 
       // define the model faces
       let faceData = {};
@@ -157,6 +202,11 @@ Test adding a model with the same name as a pre-existing model
 Test deleting a model (both pre-existing and imported)
 Test adding a model
 Test program startup with imported models
+Test importing a model with missing data
+ - Missing face normals
+ - Skewed data values
+
+Add a rename function in this file
 
 Make sure we return an alert if there are no face normals
 Add error corrections. (fallbacks)

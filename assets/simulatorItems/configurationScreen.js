@@ -23,7 +23,10 @@ export default function ConfigurationSettings(sim) {
   folder.advancedSettings.close();
 
   // placeholder for values that dont belong to any external object
-  const placeHolderObj = { modelSelection: 'Move Up', githubLink: () => window.open('https://github.com') };
+  const placeHolderObj = {
+    modelSelection: 'Move Up',
+    githubLink: () => window.open('https://github.com/Samuel21044/RenderLite-3D')
+  };
   placeHolderObj.invokeButton = () => modelSelectionBar(sim, placeHolderObj.modelSelection);
 
 
@@ -68,7 +71,7 @@ export default function ConfigurationSettings(sim) {
 
   // advanced settings
   folder.advancedSettings.add(placeHolderObj, 'modelSelection', sim.advancedOptions).name('Advanced Options');
-  folder.advancedSettings.add(placeHolderObj, 'invokeButton').name('Run Advanced Option -----------').onChange(() => {
+  folder.advancedSettings.add(placeHolderObj, 'invokeButton').name('Run Advanced Options -----------').onChange(() => {
     updateModelList();
   });
   
@@ -102,29 +105,3 @@ export default function ConfigurationSettings(sim) {
 
   return gui;
 }
-
-/*
-FUTURE ADDITIONS-----
- - Add advanced settings
- - Support custom blender models
-
- - Make torus less computationally expensive
-
- - Add to github
- - Add a readme
-
- - rewrite all the names of these thing
- - add more comments
-*/
-
-/*
-link to github page
-  - Description
-  - Source code
-  - Google document describing the rendering pipeline
-place to import custom blender models
-1 - 2 more things here
-
-So basically for the model support, I will have a dropdown, which includes (move up, move down, delete), then I will have a button that will confirm this action, tnen for delete, fi you try and delete a pre-existing one, it will not let you, but if you try and delete one you created, it will confirm with you if you actually want to delete it, if so, then it will delete it
-Then somehow I will try and save all of this to local storage
-*/

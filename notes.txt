@@ -1561,7 +1561,9 @@ git commit -m "Description of changes"
 git push
 */
 
-
+Things to get done---
+ -Change model type to simpler torus
+ -
 
 
 

@@ -1,5 +1,6 @@
- import { readWrite_data } from "../modelSettings/dataStore.js";
- import { polygonMesh } from '../render/polygonMeshData.js';
+ import { readWrite_data, saveModelSettings } from "../modelSettings/dataStore.js";
+ import { polygonMesh } from "../render/polygonMeshData.js";
+ import { updateModelList } from "../simulatorItems/configurationScreen.js";
 
 export function modelSelectionBar(sim, type) {
   // helper variables
@@ -16,6 +17,9 @@ export function modelSelectionBar(sim, type) {
         // take out the model at the current index and insert it at the new index position
         sim.models.splice(index, 1);
         sim.models.splice(newIndexPosition, 0, model);
+
+        // save the updated model list
+        saveModelSettings('write', sim);
       break;
     case 'Add':
         // open file manager
@@ -33,22 +37,22 @@ export function modelSelectionBar(sim, type) {
 
             reader.onload = (event) => {
               const fileData = event.target.result;
-              let fileName = file.name;
+
+              // remove file type suffix
+              let staticFileName = file.name.slice(0, file.name.length - 4)
+              let fileName = staticFileName;
 
               // check if the file type is an obj, if it isnt, alert, if it is, proceed.
-              if (!fileName.toLowerCase().endsWith('.obj')) {
-                alert('This file type is inconpatible with the renderer \n Please try and import a .OBJ file');
+              if (!file.name.toLowerCase().endsWith('.obj')) {
+                alert('This file type is incompatible with the renderer \n Please try and import a .OBJ file');
                 return;
               } else {
                 // add a leading number if the model name already exists
-                let numberSuffix = 0;
+                let numberSuffix = 1;
                 while (sim.models.includes(fileName)) {
                   numberSuffix++;
-                  fileName = file.name + numberSuffix;
+                  fileName = staticFileName + numberSuffix;
                 }
-
-                // remove file type suffix
-                fileName = fileName.slice(0, fileName.length - 4);
 
                 // append the model to the database
                 readWrite_data('write', fileName, fileData).then(() => {
@@ -191,6 +195,12 @@ export async function processImportedModelData(sim, fileName, updateRenderer) {
   // add it to model list
   sim.models.push(fileName);
 
+  // record updated model list for when the user returns
+  saveModelSettings('write', sim);
+
+  // update the gui display
+  updateModelList(sim);
+
   // update the renderer
   if (updateRenderer) sim.polygonMeshRenderer.updateModelAttributes('model', fileName);
 }
@@ -217,4 +227,19 @@ Rename stuff in configMenu
 /*
 Test error detection and how it looks both in alert and console
 Make sure importedModelData is correct
+*/
+
+
+/*
+I now want to test the following things
+
+ - Same name imported model {DONE}
+ - Smooth shading
+ - No face normals
+ - Model with missing data
+
+ - Move imported models
+ - Delete imported models
+ - Max data size
+ - Max name size
 */

@@ -1,8 +1,8 @@
 // import
 import PolygonMeshRenderer from './assets/simulatorItems/renderer.js';
-import ConfigurationSettings from './assets/simulatorItems/configurationScreen.js';
+import ConfigurationSettings, { updateModelList } from './assets/simulatorItems/configurationScreen.js';
 import Keyboard from './assets/userInterface/keyInput.js';
-import { createDatabase, readWrite_data } from './assets/modelSettings/dataStore.js';
+import { createDatabase, readWrite_data, saveModelSettings } from './assets/modelSettings/dataStore.js';
 import { processImportedModelData } from './assets/modelSettings/processModelRequest.js';
 
 export default class Simulator {
@@ -39,7 +39,7 @@ export default class Simulator {
     };
 
     // different advanced options
-    this.advancedOptions = ['Move Up', 'Move Down', 'Add', 'Delete', 'Rename'];
+    this.advancedOptions = ['Add', 'Delete', 'Move Up', 'Move Down', 'Rename'];
 
 
     // user interface (Configuration screen)
@@ -64,6 +64,12 @@ export default class Simulator {
     for (let i = 0; i < models.length; i++) {
       processImportedModelData(this, models[i].modelName);
     }
+
+    // update the models (w the imported models)
+    this.models = saveModelSettings('read', this);
+
+    // update the gui with the imported models
+    updateModelList(this);
   }
 
   update(dt) {

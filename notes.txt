@@ -1530,9 +1530,9 @@ FUTURE ADDITIONS-----
  - Add advanced settings
  - Support custom blender models
 
- - Make torus less computationally expensive
+ - Make torus less computationally expensive {DONE}
 
- - Add to github
+ - Add to github {DONE}
  - Add a readme
 
  - rewrite all the names of these thing
@@ -1541,6 +1541,9 @@ FUTURE ADDITIONS-----
  - Remember to mention dat.gui apache license in readme
 
  - Make sure to add prefered settings from user. (eg. renamed items)
+
+ - Dont update the model when user is changing rotation settings
+ - Add a character limit to files (for gui)
 */
 
 /*
@@ -1550,6 +1553,8 @@ link to github page
   - Google document describing the rendering pipeline
 place to import custom blender models
 1 - 2 more things here
+ - Recoomended file size is <= 500kb
+ - Max file size is whatever IndexedDB is
 */
 
 
@@ -1560,11 +1565,6 @@ git add .
 git commit -m "Description of changes"
 git push
 */
-
-Things to get done---
- -Change model type to simpler torus
- -
-
 
 
 TIMELINE LOG------------------------------------------------------  

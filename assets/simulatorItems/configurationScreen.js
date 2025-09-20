@@ -4,42 +4,44 @@ import * as dat from 'https://cdn.jsdelivr.net/npm/dat.gui@0.7.9/build/dat.gui.m
 // helper functions for advanced settings
 import { modelSelectionBar } from '../modelSettings/processModelRequest.js';
 
+// initialize gui
+const gui = new dat.GUI();
+
+// gui folders
+const folder = {
+  general: gui.addFolder('General Settings'),
+  rotation: gui.addFolder('Model Rotation'),
+  render: gui.addFolder('Rendering Style'),
+  miscellaneous: gui.addFolder('Miscellaneous'),
+  advancedSettings: gui.addFolder('Advanced Settings'),
+};
+
+let generalSettings = {model: null, size: null, pause: null};
+
 // configuration settings (using dat.GUI)
 export default function ConfigurationSettings(sim) {
-  // initialize gui
-  const gui = new dat.GUI();
-
-  // different folders
-  const folder = {
-    general: gui.addFolder('General Settings'),
-    rotation: gui.addFolder('Model Rotation'),
-    render: gui.addFolder('Rendering Style'),
-    miscellaneous: gui.addFolder('Miscellaneous'),
-    advancedSettings: gui.addFolder('Advanced Settings'),
-  };
-
   // Have all the folders open by default (except advanced settings)
   Object.values(folder).forEach(folder => { folder.open(); });
   folder.advancedSettings.close();
 
   // placeholder for values that dont belong to any external object
   const placeHolderObj = {
-    modelSelection: 'Move Up',
+    modelSelection: 'Add',
     githubLink: () => window.open('https://github.com/Samuel21044/RenderLite-3D')
   };
   placeHolderObj.invokeButton = () => modelSelectionBar(sim, placeHolderObj.modelSelection);
 
 
   // general settings
-  let model = folder.general.add(sim.polygonMeshRenderer, 'model', sim.models).name('Model').onChange(() => {
+  generalSettings.model = folder.general.add(sim.polygonMeshRenderer, 'model', sim.models).name('Model').onChange(() => {
     sim.polygonMeshRenderer.updateModelAttributes('model', 0);
   });
 
-  let size = folder.general.add(sim.camera.pos, 'z', sim.modelSize.min, sim.modelSize.max, 1).name('Model Size').onChange(() => {
+  generalSettings.size = folder.general.add(sim.camera.pos, 'z', sim.modelSize.min, sim.modelSize.max, 1).name('Model Size').onChange(() => {
     sim.polygonMeshRenderer.updateModelAttributes('size', 0);
   });
 
-  let pause = folder.general.add(sim, 'pauseProgram').name('Pause/Unpause');
+  generalSettings.pause = folder.general.add(sim, 'pauseProgram').name('Pause/Unpause');
 
   // model rotation
   ['x', 'y', 'z'].forEach(axis => {
@@ -72,10 +74,10 @@ export default function ConfigurationSettings(sim) {
   // advanced settings
   folder.advancedSettings.add(placeHolderObj, 'modelSelection', sim.advancedOptions).name('Advanced Options');
   folder.advancedSettings.add(placeHolderObj, 'invokeButton').name('Run Advanced Options -----------').onChange(() => {
-    updateModelList();
+    updateModelList(sim);
   });
   
-  folder.advancedSettings.add(placeHolderObj, 'githubLink').name('\u00A0'.repeat(7) + '--------- Github Respository 🌐 ---------');
+  folder.advancedSettings.add(placeHolderObj, 'githubLink').name('\u00A0'.repeat(7) + '--------- Github Repository 🌐 ---------');
 
 
   // disable keys when changing number values
@@ -84,24 +86,24 @@ export default function ConfigurationSettings(sim) {
     input.addEventListener('blur', ()  => sim.usingGUI = false);
   });
 
-  // update the modelList in the general folder (helper function)
-  function updateModelList() {
-    setTimeout(() => {
-      // delete all the controller in the general folder
-      folder.general.remove(model);
-      folder.general.remove(size);
-      folder.general.remove(pause);
-
-      // rewrite the controllers so that sim.models is updated properly & at the same position
-      model = folder.general.add(sim.polygonMeshRenderer, 'model', [...sim.models]).name('Model').onChange(() => {
-        sim.polygonMeshRenderer.updateModelAttributes('model', 0);
-      });
-      size = folder.general.add(sim.camera.pos, 'z', sim.modelSize.min, sim.modelSize.max, 1).name('Model Size').onChange(() => {
-        sim.polygonMeshRenderer.updateModelAttributes('size', 0);
-      });
-      pause = folder.general.add(sim, 'pauseProgram').name('Pause/Unpause');
-    }, 0);
-  }
-
   return gui;
+}
+
+// update the modelList in the general folder (helper function)
+export function updateModelList(sim) {
+  setTimeout(() => {
+    // delete all the controller in the general folder
+    folder.general.remove(generalSettings.model);
+    folder.general.remove(generalSettings.size);
+    folder.general.remove(generalSettings.pause);
+
+    // rewrite the controllers so that sim.models is updated properly & at the same position
+    generalSettings.model = folder.general.add(sim.polygonMeshRenderer, 'model', [...sim.models]).name('Model').onChange(() => {
+      sim.polygonMeshRenderer.updateModelAttributes('model', 0);
+    });
+    generalSettings.size = folder.general.add(sim.camera.pos, 'z', sim.modelSize.min, sim.modelSize.max, 1).name('Model Size').onChange(() => {
+      sim.polygonMeshRenderer.updateModelAttributes('size', 0);
+    });
+    generalSettings.pause = folder.general.add(sim, 'pauseProgram').name('Pause/Unpause');
+  }, 0);
 }

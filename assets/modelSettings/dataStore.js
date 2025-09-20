@@ -75,3 +75,26 @@ export function readWrite_data(type, modelName, modelData) {
     console.error(`IndexedDB could not perform the following action: ${type} \n\n IndexDB error: ${err}`);
   });
 }
+
+// saves the settings (regarding the models) that user edited in the advanced settings folder
+export function saveModelSettings(type, sim) {
+  // saved model list
+  let savedModelList = JSON.parse(localStorage.getItem('modelSettings'));
+
+  switch (type) {
+    case 'read':
+        // if model settings isnt defined, then define it and return the current model list
+        if (!savedModelList) {
+          localStorage.setItem('modelSettings', JSON.stringify(sim.models));
+          return sim.models;
+        }
+
+        // if already defined, read from regular local storage
+        return savedModelList;
+      break;
+    case 'write':
+        // write the new updated model list
+        localStorage.setItem('modelSettings', JSON.stringify(sim.models));
+      break;
+  }
+}

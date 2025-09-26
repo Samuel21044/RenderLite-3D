@@ -62,6 +62,9 @@ export function modelSelectionBar(sim, type) {
               }
             };
           }
+
+          // reset the input value (so that the file change event is cleared and doesnt stack causing issues)
+          input.value = '';
         });
       break;
     case 'Delete':
@@ -73,15 +76,20 @@ export function modelSelectionBar(sim, type) {
           if (deleteModel) {
             let prevModel = Math.max(index - 1, 0);
 
-            // delete the model from the database
-            readWrite_data('delete', model).then(() => {
-              // delete the model from the modelList
-              sim.models.splice(index, 1);
-              sim.polygonMeshRenderer.model = sim.models[prevModel];
+            // delete the model from the modelList
+            sim.models.splice(index, 1);
 
-              //delete the model from polygonMeshData
-              delete polygonMesh.model;
-            });
+            // update the renderer
+            sim.polygonMeshRenderer.updateModelAttributes('model', sim.models[prevModel]);
+
+            //delete the model from polygonMeshData
+            delete polygonMesh[model];
+
+            // update the gui display
+            updateModelList(sim);
+
+            // delete the model from the database
+            readWrite_data('delete', model, null, sim).then(() => {});
           }
         } else {
           // alert the user that they cannot delete a pre-existing model
@@ -153,6 +161,10 @@ export async function processImportedModelData(sim, fileName, updateRenderer) {
       // exit early if data is not defined/numerical
       if ([a, b, c].some(num => isNaN(num))) {
         incompleteDataAlert(1);
+        console.log('vertexlist alert');
+
+        // delete from database and exit
+        await readWrite_data('delete', fileName);
         return;
       }
 
@@ -162,6 +174,10 @@ export async function processImportedModelData(sim, fileName, updateRenderer) {
       // exit early if face normals are not defined
       if (normalList.length === 0) {
         incompleteDataAlert(2);
+        console.log('normalList alert');
+
+        // delete from database and exit
+        await readWrite_data('delete', fileName);
         return;
       }
 
@@ -173,6 +189,10 @@ export async function processImportedModelData(sim, fileName, updateRenderer) {
       // exit early if data is not defined/numerical
       if (currentVertexLine.some(n => isNaN(n)) || isNaN(currentNormalIndex)) {
         incompleteDataAlert(1);
+        console.log('facelist alert');
+
+        // delete from database and exit
+        await readWrite_data('delete', fileName);
         return;
       }
 
@@ -195,11 +215,11 @@ export async function processImportedModelData(sim, fileName, updateRenderer) {
   // add it to model list
   sim.models.push(fileName);
 
-  // record updated model list for when the user returns
-  saveModelSettings('write', sim);
-
   // update the gui display
   updateModelList(sim);
+
+  // save model settings
+  saveModelSettings('write', sim);
 
   // update the renderer
   if (updateRenderer) sim.polygonMeshRenderer.updateModelAttributes('model', fileName);
@@ -243,3 +263,48 @@ I now want to test the following things
  - Max data size
  - Max name size
 */
+
+
+/**
+
+Fixed things:
+ - Less expensive torus
+ - Saved model dropdown settings
+ - Importing correct .obj models
+ - Detection of incorrect file type
+ - Appearance of model types being shown on model dropdown on first import
+ */
+
+ /*
+ BUGS------
+
+ - Make sure that when I change any settings regarding rotation that I make sure that the program is unpaused
+ - Whenever moving models, it using hotkeys it sitll stays in its original place plus where it got moved to
+ - Can import more than 10 models
+ - Some weird stuff going on with the modified imported models
+ */
+
+ /*
+  - Missing vertex data (some)
+  - Missing normal data (some)
+  - Missing normal data (all)
+  - Missing face data (some)
+
+  -Missing data (all 3, some)
+  -Make sure model on startup is the model in the first list
+
+  Note that any modified numerical values dont affect it just the display
+
+  Need to implement jargon so see how renderer handles that (note multiple variatns to see what works and what doesnt work)
+ */
+
+
+  /*
+  Thigns I want to have done-
+   - Have deleted models working
+   - Have renaming models working
+   - Have imported models working correctly
+     - Correctly detect when models have messed up data
+  
+   - Include limits such as character and file size limits
+  */

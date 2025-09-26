@@ -1535,7 +1535,7 @@ FUTURE ADDITIONS-----
  - Add to github {DONE}
  - Add a readme
 
- - rewrite all the names of these thing
+ - rewrite all the names of these things
  - add more comments
 
  - Remember to mention dat.gui apache license in readme
@@ -1553,7 +1553,7 @@ link to github page
   - Google document describing the rendering pipeline
 place to import custom blender models
 1 - 2 more things here
- - Recoomended file size is <= 500kb
+ - Recoomended file size is <= 1,000kb
  - Max file size is whatever IndexedDB is
 */
 

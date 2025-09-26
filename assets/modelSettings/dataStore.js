@@ -31,7 +31,7 @@ export function createDatabase() {
   });
 }
 
-export function readWrite_data(type, modelName, modelData) {
+export function readWrite_data(type, modelName, modelData, sim) {
   return new Promise((resolve, reject) => {
     // find the transaction type and database
     const transaction = databaseConnection.transaction("importedModels", "readwrite");
@@ -54,9 +54,15 @@ export function readWrite_data(type, modelName, modelData) {
 
           // append the model to the database
           returnData = storeModel.put(modelMetadata);
+
+          // record updated model list for when the user returns
+          if (sim) saveModelSettings('write', sim);
         break;
       case 'delete':
           returnData = storeModel.delete(modelName);
+
+          // record updated model list for when the user returns
+          if (sim) saveModelSettings('write', sim);
         break;
     }
 

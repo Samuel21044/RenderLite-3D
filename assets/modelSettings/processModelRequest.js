@@ -69,7 +69,7 @@ export function modelSelectionBar(sim, type) {
       break;
     case 'Delete':
         // check if he model is imported, if so, then ask if the user wants to delete it
-        if (!sim.presetModels.includes(sim.polygonMeshRenderer.model)) {
+        if (!sim.presetModels.includes(model)) {
           let deleteModel = confirm('Are you sure you want to delete this model? \n This action cannot be undone');
 
           // delete the model if user confirms
@@ -79,17 +79,20 @@ export function modelSelectionBar(sim, type) {
             // delete the model from the modelList
             sim.models.splice(index, 1);
 
+            // update the model list save data
+            saveModelSettings('write', sim);
+
             // update the renderer
             sim.polygonMeshRenderer.updateModelAttributes('model', sim.models[prevModel]);
 
             //delete the model from polygonMeshData
             delete polygonMesh[model];
 
-            // update the gui display
-            updateModelList(sim);
-
             // delete the model from the database
-            readWrite_data('delete', model, null, sim).then(() => {});
+            readWrite_data('delete', model).then(() => {
+              // update the gui display
+              updateModelList(sim);
+            });
           }
         } else {
           // alert the user that they cannot delete a pre-existing model
@@ -99,26 +102,45 @@ export function modelSelectionBar(sim, type) {
     case 'Rename':
         // new model name
         let newName = prompt('Enter new Model name here: ');
+        let checkName = newName !== null;
 
-        if (newName !== null && newName.length !== 0) {
-          // make sure the model name doesnt already exist
-          if (sim.models.includes(newName)) {
-            alert('Model name already exists \n Please try and choose a different name');
-            return;
-          } //else if () {
+        // throw an error if the user tries to rename a preset model
+        if (sim.presetModels.includes(model) && checkName) {
+          alert('Model name can only be edited for imported models \n Please try and rename an imported model');
 
-          //} 
+        // throw an error if the user tries to rename the model to the same name
+        } else if (newName === model && checkName) {
+          alert('New model name cant be the same as previous name \n Please try and choose a different name');
+          modelSelectionBar(sim, 'Rename');
 
-          // write something here
-          // Throw an error if the user tries to rename the model presets
-          // Change the name in the model database & facely in modelList during the moment
+        // throw and error if the name already exists for another model
+        } else if (sim.models.includes(newName) && checkName) {
+          alert('Model name already exists \n Please try and choose a different name');
+          modelSelectionBar(sim, 'Rename');
 
-          /*
-          Reaons to throw error---s
-           - If name already exists
-           - If persons length is zero
-           - If user tries to change a preset model
-          */
+        // throw an error if the user doesnt input anything
+        } else if (newName.length === 0 && checkName) {
+          alert('Please provide a name for the specificed model');
+          modelSelectionBar(sim, 'Rename');
+
+        // update and change the model name
+        } else if (checkName) {
+          // update the name in modelList
+          sim.models[index] = newName;
+          saveModelSettings('write', sim);
+
+          // update the name in polygonMesh
+          polygonMesh[newName] = polygonMesh[model];
+          delete polygonMesh[model]; 
+
+          // update the new name in the model's database
+          renameModelDB(model, newName);
+
+          // update the renderer
+          sim.polygonMeshRenderer.updateModelAttributes('model', newName);
+
+          // update the gui display
+          updateModelList(sim);
         }
       break;
   }
@@ -161,7 +183,6 @@ export async function processImportedModelData(sim, fileName, updateRenderer) {
       // exit early if data is not defined/numerical
       if ([a, b, c].some(num => isNaN(num))) {
         incompleteDataAlert(1);
-        console.log('vertexlist alert');
 
         // delete from database and exit
         await readWrite_data('delete', fileName);
@@ -174,7 +195,6 @@ export async function processImportedModelData(sim, fileName, updateRenderer) {
       // exit early if face normals are not defined
       if (normalList.length === 0) {
         incompleteDataAlert(2);
-        console.log('normalList alert');
 
         // delete from database and exit
         await readWrite_data('delete', fileName);
@@ -189,7 +209,6 @@ export async function processImportedModelData(sim, fileName, updateRenderer) {
       // exit early if data is not defined/numerical
       if (currentVertexLine.some(n => isNaN(n)) || isNaN(currentNormalIndex)) {
         incompleteDataAlert(1);
-        console.log('facelist alert');
 
         // delete from database and exit
         await readWrite_data('delete', fileName);
@@ -211,18 +230,31 @@ export async function processImportedModelData(sim, fileName, updateRenderer) {
 
   // add it to polygonMeshData (eg. where the model data is stored and retreived)
   polygonMesh[fileName] = objectData;
+  
+  if (updateRenderer) {
+    // add it to model list
+    sim.models.push(fileName);
 
-  // add it to model list
-  sim.models.push(fileName);
+    // update the model list save data
+    saveModelSettings('write', sim);
 
-  // update the gui display
-  updateModelList(sim);
+    // update the renderer
+    sim.polygonMeshRenderer.updateModelAttributes('model', fileName);
 
-  // save model settings
-  saveModelSettings('write', sim);
+    // update the gui display
+    updateModelList(sim);
+  }
+}
 
-  // update the renderer
-  if (updateRenderer) sim.polygonMeshRenderer.updateModelAttributes('model', fileName);
+async function renameModelDB(oldName, newName) {
+  // read old record
+  const oldRecord = await readWrite_data('read', oldName);
+
+  // Step 2: Delete the old record
+  await readWrite_data('delete', oldName);
+
+  // Step 3: Write a new record with the new name, reusing the old data
+  await readWrite_data('write', newName, oldRecord.modelData);
 }
 
 /*
@@ -259,7 +291,7 @@ I now want to test the following things
  - Model with missing data
 
  - Move imported models
- - Delete imported models
+ - Delete imported models {DONE}
  - Max data size
  - Max name size
 */
@@ -273,6 +305,8 @@ Fixed things:
  - Importing correct .obj models
  - Detection of incorrect file type
  - Appearance of model types being shown on model dropdown on first import
+ - Model deletion
+ - Renaming function
  */
 
  /*
@@ -301,8 +335,6 @@ Fixed things:
 
   /*
   Thigns I want to have done-
-   - Have deleted models working
-   - Have renaming models working
    - Have imported models working correctly
      - Correctly detect when models have messed up data
   
